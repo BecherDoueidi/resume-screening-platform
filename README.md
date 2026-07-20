@@ -42,11 +42,19 @@ already sets the required `host-gateway` mapping.
 ## Demo web portal (running without Docker)
 
 A small Flask app in `webapp/` lets a candidate upload a resume PDF through a
-browser instead of the CLI. Uploading returns **immediately** — parsing,
-anonymizing, and evaluating all happen in a background worker process, and
-the page polls for status until the score card is ready. Uses `--backend
-auto` behavior: Claude if `ANTHROPIC_API_KEY` is set, otherwise the free
-local Ollama model automatically.
+browser instead of the CLI. The homepage lists every **active** job position
+(whatever recruiters have created/opened from the dashboard's Job management
+page) in a picker — candidates choose which role they're applying for, and
+the page updates to show that role's summary and required skills. Uploading
+returns **immediately** — parsing, anonymizing, and evaluating all happen in
+a background worker process, and the page polls for status until it's done.
+Uses `--backend auto` behavior: Claude if `ANTHROPIC_API_KEY` is set,
+otherwise the free local Ollama model automatically.
+
+The candidate never sees the AI's evaluation (score, justification, gaps,
+interview questions) — only that their submission was received. That detail
+is reserved for recruiters/admins in the dashboard and API, gated by the
+`VIEW` permission (see [Authentication & security](#authentication--security)).
 
 All submitted-application data (applicants, resumes, evaluations, bias-audit
 logs, processing-job status) is stored in **Postgres**, not JSON files — see
@@ -83,10 +91,9 @@ export.
   the table or the detail page — instantly, via `POST /admin/candidates/<id>/status`.
 - **Job management** (`/admin/jobs`): create and edit positions (title,
   description, required skills, minimum experience, active/closed status).
-  Note: the public `/apply` form still only submits against the one job
-  loaded from `data/job_description.json` at startup — job management here
-  lets you maintain multiple position records for organizing/filtering
-  candidates, not yet a "pick which job to apply to" flow on the candidate side.
+  Every **active** position immediately appears in the public apply page's
+  job picker; closing a position removes it from the picker (existing
+  applications for it are unaffected).
 - **Export**: `/admin/export.csv` and `/admin/export.json`, honoring whatever
   search/filter/sort is currently applied.
 
