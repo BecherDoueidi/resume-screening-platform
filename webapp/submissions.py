@@ -59,7 +59,19 @@ def submit_resume(
         )
         public_id, resume_id, job_id = db_resume.public_id, db_resume.id, db_job.id
 
-    rq_job = get_queue().enqueue(process_resume, resume_id, job_id, retry=DEFAULT_RETRY, job_timeout="10m")
+    try:
+        rq_job = get_queue().enqueue(process_resume, resume_id, job_id, retry=DEFAULT_RETRY, job_timeout="10m")
+    except Exception as exc:
+        # The Resume/ProcessingJob rows above are already committed — if we
+        # don't mark them failed here, they're stuck at "pending" forever
+        # with no evaluation and no visible error (e.g. Redis unreachable).
+        logger.error(
+            "enqueue_failed", extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id}, exc_info=True
+        )
+        with new_session() as db:
+            store.fail_resume(db, job_id, error=str(exc), retryable=False)
+        raise SubmissionError("Could not queue your resume for processing. Please try again shortly.") from exc
+
     with new_session() as db:
         store.attach_rq_job_id(db, job_id, rq_job.id)
 

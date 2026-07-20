@@ -63,6 +63,26 @@ class TestApplyRoute:
         job = db_session.query(ProcessingJob).one()
         assert job.rq_job_id == "fake-rq-job-id"
 
+    def test_enqueue_failure_marks_job_failed_instead_of_stuck_pending(self, client, db_session, _mock_queue):
+        """If Redis is unreachable, the Resume/ProcessingJob rows are already
+        committed by the time enqueue() runs — without this handling they'd
+        be stuck at "pending" forever with no visible error."""
+        fake_queue = _mock_queue.return_value
+        fake_queue.enqueue.side_effect = ConnectionError("Redis is unreachable")
+
+        resp = _upload(client)
+
+        assert resp.status_code == 400
+        assert b"Could not queue your resume" in resp.data
+
+        job = db_session.query(ProcessingJob).one()
+        assert job.status == "failed"
+        assert job.error == "Redis is unreachable"
+
+        resume = db_session.query(Resume).one()
+        assert resume.status == "failed"
+        assert "Redis is unreachable" in resume.parse_error
+
     def test_rejects_missing_file(self, client):
         resp = client.post("/apply", data={"name": "Jane Doe"}, content_type="multipart/form-data")
         assert resp.status_code == 400
