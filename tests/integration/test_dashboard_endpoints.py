@@ -153,10 +153,44 @@ class TestDeletion:
         resp = admin_client.get("/admin/dashboard")
         assert b"Jane Candidate" not in resp.data
 
+    def test_delete_one_updates_total_applicants_stat(self, admin_client, evaluated_candidate, db_session):
+        """Deleting a Resume without also deleting its Applicant left an
+        orphaned row that kept inflating this count — regression test."""
+        from webapp.models_db import Applicant
+
+        admin_client.post(f"/admin/delete/{evaluated_candidate}")
+        assert db_session.query(Applicant).count() == 0
+        resp = admin_client.get("/admin/dashboard")
+        assert b">0<" in resp.data  # total applicants stat card now shows 0
+
     def test_delete_all_clears_everything(self, admin_client, evaluated_candidate):
         admin_client.post("/admin/delete-all")
         resp = admin_client.get("/admin/dashboard")
         assert b"Jane Candidate" not in resp.data
+
+    def test_delete_all_leaves_no_orphaned_applicants(self, admin_client, evaluated_candidate, db_session):
+        from webapp.models_db import Applicant
+
+        admin_client.post("/admin/delete-all")
+        assert db_session.query(Applicant).count() == 0
+
+    def test_dashboard_delete_all_form_is_not_nested_inside_filter_form(self, admin_client, evaluated_candidate):
+        """Regression test: the delete-all <form> was nested inside the
+        filters <form>, which is invalid HTML — browsers silently drop the
+        nested tag, so clicking "Delete all" actually submitted the outer
+        GET filter form instead of POSTing to /admin/delete-all."""
+        import re
+
+        resp = admin_client.get("/admin/dashboard")
+        html = resp.data.decode()
+        forms = list(re.finditer(r"<form\b", html))
+        form_ends = list(re.finditer(r"</form>", html))
+        # every <form> open must close before the next one opens
+        positions = sorted([(m.start(), "open") for m in forms] + [(m.start(), "close") for m in form_ends])
+        depth = 0
+        for _, kind in positions:
+            depth += 1 if kind == "open" else -1
+            assert depth <= 1, "a <form> is nested inside another <form>"
 
 
 class TestJobManagement:

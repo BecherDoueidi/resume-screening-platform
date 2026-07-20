@@ -54,44 +54,46 @@
     <div class="stat-card"><div class="label">Processing queue</div><div class="value">{{ stats.processing_queue }}</div></div>
   </div>
 
-  <form class="filters" method="get" action="{{ url_for('recruiter.dashboard') }}">
-    <input type="text" name="q" placeholder="Search name or filename…" value="{{ filters.q }}">
-    <select name="job">
-      <option value="">All jobs</option>
-      {% for j in jobs %}
-        <option value="{{ j.id }}" {% if filters.job == j.id %}selected{% endif %}>{{ j.title }}</option>
-      {% endfor %}
-    </select>
-    <select name="status">
-      <option value="">Any recruiter status</option>
-      {% for s in recruiter_statuses %}
-        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
-      {% endfor %}
-    </select>
-    <select name="eval_status">
-      <option value="">Any eval status</option>
-      {% for s in ['pending','processing','evaluated','failed'] %}
-        <option value="{{ s }}" {% if filters.eval_status == s %}selected{% endif %}>{{ s|capitalize }}</option>
-      {% endfor %}
-    </select>
-    <select name="sort">
-      {% for opt, label in [('date_desc','Newest first'), ('date_asc','Oldest first'),
-                             ('score_desc','Score: high to low'), ('score_asc','Score: low to high'),
-                             ('name_asc','Name A-Z'), ('name_desc','Name Z-A')] %}
-        <option value="{{ opt }}" {% if filters.sort == opt %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit" style="margin:0;width:auto;padding:8px 16px;">Apply</button>
+  <div class="filters">
+    <form method="get" action="{{ url_for('recruiter.dashboard') }}" style="display:contents;">
+      <input type="text" name="q" placeholder="Search name or filename…" value="{{ filters.q }}">
+      <select name="job">
+        <option value="">All jobs</option>
+        {% for j in jobs %}
+          <option value="{{ j.id }}" {% if filters.job == j.id %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
+      <select name="status">
+        <option value="">Any recruiter status</option>
+        {% for s in recruiter_statuses %}
+          <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+        {% endfor %}
+      </select>
+      <select name="eval_status">
+        <option value="">Any eval status</option>
+        {% for s in ['pending','processing','evaluated','failed'] %}
+          <option value="{{ s }}" {% if filters.eval_status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+        {% endfor %}
+      </select>
+      <select name="sort">
+        {% for opt, label in [('date_desc','Newest first'), ('date_asc','Oldest first'),
+                               ('score_desc','Score: high to low'), ('score_asc','Score: low to high'),
+                               ('name_asc','Name A-Z'), ('name_desc','Name Z-A')] %}
+          <option value="{{ opt }}" {% if filters.sort == opt %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" style="margin:0;width:auto;padding:8px 16px;">Apply</button>
+    </form>
     <a class="btn" href="{{ url_for('recruiter.export_csv', q=filters.q, job=filters.job, status=filters.status, eval_status=filters.eval_status, sort=filters.sort) }}">Export CSV</a>
     <a class="btn" href="{{ url_for('recruiter.export_json', q=filters.q, job=filters.job, status=filters.status, eval_status=filters.eval_status, sort=filters.sort) }}">Export JSON</a>
     {% if candidates and has_permission(current_user, 'delete_all') %}
       <form action="{{ url_for('recruiter.delete_all') }}" method="post" style="display:inline;"
-            onsubmit="return confirm('Delete all {{ candidates|length }} candidates shown? This cannot be undone.');">
+            onsubmit="return confirm('Delete ALL candidates (not just the ones shown by your current filters)? This cannot be undone.');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger" style="margin:0;width:auto;">Delete all</button>
       </form>
     {% endif %}
-  </form>
+  </div>
 
   <div class="panel" style="padding:0;overflow-x:auto;">
     {% if not candidates %}

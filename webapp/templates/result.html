@@ -70,18 +70,10 @@
               '<div class="err">We couldn\'t read your PDF: ' + data.parse_error +
               '. Please try re-exporting it and upload again.</div>';
           } else if (data.eval_error) {
-            resultPanel.innerHTML = '<div class="err">Evaluation error: ' + data.eval_error + '</div>';
-          } else if (data.card_doc) {
-            const iframe = document.createElement('iframe');
-            iframe.title = 'Evaluation result';
-            iframe.srcdoc = data.card_doc;
-            iframe.style.cssText = 'width:100%;border:0;display:block;';
-            iframe.scrolling = 'no';
-            iframe.onload = function () {
-              iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 24) + 'px';
-            };
-            resultPanel.appendChild(iframe);
+            resultPanel.innerHTML = '<div class="err">' + data.eval_error + ' Please try again shortly.</div>';
           } else {
+            // Deliberately no score/evaluation shown here — candidates only
+            // see that their submission was received, not how it scored.
             resultPanel.innerHTML =
               '<div style="font-weight:700;font-size:14px;">&#9989; Application submitted</div>' +
               '<div style="color:var(--muted);font-size:13.5px;margin-top:6px;">' +

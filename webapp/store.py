@@ -223,7 +223,14 @@ def load_applications_view(session: Session) -> list[SimpleNamespace]:
 
 
 def get_status_view(session: Session, public_id: str) -> SimpleNamespace | None:
-    """Backs the polling endpoint (GET /status/<public_id>)."""
+    """Backs the polling endpoint (GET /status/<public_id>), used by the
+    candidate-facing result page. Deliberately excludes the evaluation itself
+    (score, justification, gaps, interview questions) — the applicant should
+    only ever see that their submission was received, not how it scored.
+    Recruiters/admins see the full evaluation via the dashboard's candidate
+    detail view (store.get_candidate_detail), which is gated by VIEW
+    permission and never exposed on this public endpoint.
+    """
     resume = session.scalar(select(Resume).where(Resume.public_id == public_id))
     if not resume:
         return None
@@ -235,22 +242,28 @@ def get_status_view(session: Session, public_id: str) -> SimpleNamespace | None:
         message=job.progress_message if job else "Queued",
         error=job.error if job else "",
         parse_error=resume.parse_error,
-        overall=ev.overall if ev else None,
-        eval_error=ev.error if ev else None,
-        card_doc=ev.card_html if ev else None,
+        eval_error="Evaluation failed." if ev and ev.error else None,
     )
 
 
 def clear_applications(session: Session) -> None:
+    # Deleting only the Resume leaves its Applicant behind (Resume->Applicant
+    # is the FK-cascade direction, not the reverse), which orphaned rows that
+    # kept inflating the "Total Applicants" count after a delete. Delete the
+    # Applicant too so the count and the candidate list agree.
     for resume in session.scalars(select(Resume)).all():
         session.delete(resume)
+    for applicant in session.scalars(select(Applicant)).all():
+        session.delete(applicant)
     session.commit()
 
 
 def delete_application(session: Session, public_id: str) -> None:
     resume = session.scalar(select(Resume).where(Resume.public_id == public_id))
     if resume:
+        applicant = resume.applicant
         session.delete(resume)
+        session.delete(applicant)
         session.commit()
 
 

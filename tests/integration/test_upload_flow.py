@@ -128,3 +128,40 @@ class TestStatusEndpoint:
     def test_returns_404_for_unknown_id(self, client):
         resp = client.get("/status/does-not-exist")
         assert resp.status_code == 404
+
+    def test_completed_status_does_not_expose_the_evaluation(self, client, db_session):
+        """The candidate-facing polling endpoint must never leak the AI's
+        score, justification, or interview questions — only that the
+        submission was received and its pipeline status."""
+        from screener.models import Evaluation as EvaluationResult
+        from webapp import store
+
+        upload_resp = _upload(client)
+        public_id = upload_resp.data.decode().split('data-public-id="')[1].split('"')[0]
+        resume = db_session.query(Resume).one()
+        job = db_session.query(ProcessingJob).one()
+
+        store.save_evaluation(
+            db_session,
+            resume.id,
+            job.id,
+            backend="ollama",
+            evaluation=EvaluationResult(
+                skill_match=90,
+                experience_relevance=80,
+                project_impact=70,
+                overall=80,
+                justification="Secret justification text.",
+                gaps=[],
+                interview_questions=["Secret question?"],
+            ),
+            card_html="<div>Secret score card</div>",
+        )
+
+        resp = client.get(f"/status/{public_id}")
+        data = resp.get_json()
+        assert data["status"] in ("pending", "processing", "completed")
+        assert "overall" not in data
+        assert "card_doc" not in data
+        assert "skill_match" not in data
+        assert "justification" not in data
