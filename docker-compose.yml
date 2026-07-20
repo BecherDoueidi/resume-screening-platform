@@ -19,6 +19,7 @@ x-app-env: &app-env
   # on the host machine, if any. No effect if you're using ANTHROPIC_API_KEY
   # instead, or running neither (the app degrades to "not evaluated" either way).
   OLLAMA_BASE_URL: http://host.docker.internal:11434
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
 services:
   db:

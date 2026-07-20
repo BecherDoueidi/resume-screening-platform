@@ -13,6 +13,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, redirect, render_template, request, url_for
@@ -32,6 +33,8 @@ from webapp.auth import (
 )
 from webapp.db import new_session
 from webapp.store import RECRUITER_STATUSES
+
+logger = logging.getLogger(__name__)
 
 recruiter_bp = Blueprint("recruiter", __name__, url_prefix="/admin")
 
@@ -129,6 +132,7 @@ def delete_all():
         store.log_action(db, actor=current_user.username, action="delete_all")
     for upload in UPLOAD_DIR.glob("*.pdf"):
         upload.unlink(missing_ok=True)
+    logger.warning("delete_all_candidates", extra={"actor": current_user.username})
     return redirect(url_for("recruiter.dashboard"))
 
 
@@ -138,6 +142,7 @@ def delete_one(public_id):
     with new_session() as db:
         store.delete_application(db, public_id)
         store.log_action(db, actor=current_user.username, action="delete_application", details={"public_id": public_id})
+    logger.info("delete_candidate", extra={"actor": current_user.username, "public_id": public_id})
     return redirect(url_for("recruiter.dashboard"))
 
 
@@ -234,7 +239,11 @@ def create_user_route():
                 action="create_user",
                 details={"username": new.username, "role": new.role},
             )
+            logger.info(
+                "user_created", extra={"actor": current_user.username, "username": new.username, "role": new.role}
+            )
     except ValidationError as exc:
+        logger.warning("user_creation_failed", extra={"actor": current_user.username, "error": str(exc)})
         error = str(exc)
     if error:
         with new_session() as db:
@@ -249,6 +258,7 @@ def deactivate_user(user_id):
     with new_session() as db:
         store.set_user_active(db, user_id, active=False)
         store.log_action(db, actor=current_user.username, action="deactivate_user", details={"user_id": user_id})
+    logger.warning("user_deactivated", extra={"actor": current_user.username, "user_id": user_id})
     return redirect(url_for("recruiter.users"))
 
 

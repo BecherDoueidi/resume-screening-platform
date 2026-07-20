@@ -16,9 +16,12 @@ sha256 hash of the original value — the raw value is never persisted.
 from __future__ import annotations
 
 import hashlib
+import logging
 import re
 
 from screener.models import RedactionRecord, Resume
+
+logger = logging.getLogger(__name__)
 
 _NLP = None
 _SPACY_WARNING_SHOWN = False
@@ -33,10 +36,9 @@ def _get_nlp():
             _NLP = spacy.load("en_core_web_sm")
         except Exception:
             _SPACY_WARNING_SHOWN = True
-            print(
-                "  [warn] spaCy model 'en_core_web_sm' not available - "
-                "falling back to regex-only anonymization. "
-                "Run: python -m spacy download en_core_web_sm"
+            logger.warning(
+                "spacy_model_unavailable",
+                extra={"fallback": "regex_only_anonymization"},
             )
     return _NLP
 

@@ -255,6 +255,48 @@ and shows it. `ProcessingJob.attempts` tracks how many runs it took.
 forking `Worker` everywhere else — Linux/Docker deployments get full per-job
 crash isolation.
 
+## Logging & monitoring
+
+Every process (the web app, the worker, and the `migrate`/bootstrap scripts)
+logs structured JSON to stdout via `webapp/logging_config.py` — one line per
+event, ready for any log aggregator (`docker compose logs`, CloudWatch, Loki,
+etc.) without a separate parsing step:
+
+```json
+{"timestamp": "2026-07-20T22:57:38+0400", "level": "INFO", "logger": "webapp.tasks",
+ "message": "ai_response_time", "request_id": "-", "processing_id": "job-1",
+ "resume_id": 1, "job_id": 1, "backend": "ollama", "ai_duration_ms": 12753.4}
+```
+
+- **Request IDs**: every HTTP request gets one (reused from an incoming
+  `X-Request-ID` header if present, otherwise generated), bound via a
+  `contextvar` so every log line emitted while handling that request carries
+  it automatically — no need to thread it through every function call. It's
+  also echoed back as the `X-Request-ID` response header, so a user-reported
+  error can be traced straight to its server-side log lines.
+- **Processing IDs**: every background job gets `job-<id>` bound the same
+  way at the top of `webapp/tasks.process_resume`, so every log line for one
+  resume's processing — across parsing, anonymizing, evaluating, saving —
+  can be grepped out even with many jobs interleaved in the worker's log
+  stream.
+- **Levels**: INFO for normal lifecycle events (`request_started`,
+  `resume_submitted`, `processing_completed`, `login_succeeded`, ...),
+  WARNING for recoverable/expected problems (`parsing_failed` — a bad PDF,
+  not retryable but not a bug either — `login_failed`, `delete_all_candidates`),
+  ERROR for real failures (`evaluation_failed`, `processing_failed`, with a
+  full traceback via `exc_info=True` on unexpected exceptions).
+- **Timing tracked explicitly**: `processing_completed`/`processing_failed`
+  carry `duration_ms` for the whole pipeline run; `ai_response_time`/
+  `evaluation_failed` separately carry `ai_duration_ms` for just the
+  Claude/Ollama call, so a slow resume can be attributed to "the model was
+  slow" vs. "something else in the pipeline was slow" at a glance.
+- **Parsing and evaluation failures** are always logged (`parsing_failed` at
+  WARNING, `evaluation_failed` at ERROR) with the actual error message, in
+  addition to being recorded on the `Resume`/`Evaluation` rows for the UI.
+
+Set `LOG_LEVEL` (default `INFO`) to change verbosity; `docker-compose.yml`
+already wires it through to both `web` and `worker`.
+
 ## Pipeline
 
 ```

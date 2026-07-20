@@ -10,13 +10,15 @@ by Redis. The result page polls GET /status/<id> until the job completes.
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
+import time
 import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, g, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user
 from flask_wtf.csrf import CSRFProtect
 
@@ -28,8 +30,12 @@ from webapp import store  # noqa: E402
 from webapp.auth import authenticate, has_permission, login_manager  # noqa: E402
 from webapp.db import init_db, new_session  # noqa: E402
 from webapp.jobs import DEFAULT_RETRY, get_queue  # noqa: E402
+from webapp.logging_config import bind_request_id, configure_logging  # noqa: E402
 from webapp.recruiter import recruiter_bp  # noqa: E402
 from webapp.tasks import process_resume  # noqa: E402
+
+configure_logging()
+logger = logging.getLogger(__name__)
 
 load_dotenv(ROOT / ".env")
 
@@ -67,6 +73,34 @@ def inject_auth_helpers():
     return dict(current_user=current_user, has_permission=has_permission)
 
 
+@app.before_request
+def _start_request_log():
+    g.request_id = bind_request_id(request.headers.get("X-Request-ID"))
+    g.request_start = time.perf_counter()
+    logger.info("request_started", extra={"method": request.method, "path": request.path})
+
+
+@app.after_request
+def _finish_request_log(response):
+    response.headers["X-Request-ID"] = getattr(g, "request_id", "-")
+    duration_ms = round((time.perf_counter() - getattr(g, "request_start", time.perf_counter())) * 1000, 1)
+    log_fn = (
+        logger.error
+        if response.status_code >= 500
+        else (logger.warning if response.status_code >= 400 else logger.info)
+    )
+    log_fn(
+        "request_finished",
+        extra={
+            "method": request.method,
+            "path": request.path,
+            "status_code": response.status_code,
+            "duration_ms": duration_ms,
+        },
+    )
+    return response
+
+
 @app.route("/")
 def index():
     return render_template("index.html", job=JD)
@@ -76,8 +110,10 @@ def index():
 def apply():
     file = request.files.get("resume")
     if not file or file.filename == "":
+        logger.warning("apply_rejected", extra={"reason": "missing_file"})
         return render_template("index.html", job=JD, error="Please choose a PDF file."), 400
     if not file.filename.lower().endswith(".pdf"):
+        logger.warning("apply_rejected", extra={"reason": "non_pdf_extension", "uploaded_filename": file.filename})
         return render_template("index.html", job=JD, error="Only PDF resumes are accepted."), 400
 
     applicant_name = (request.form.get("name", "").strip() or "Applicant")[:200]
@@ -99,6 +135,11 @@ def apply():
     rq_job = get_queue().enqueue(process_resume, resume_id, job_id, retry=DEFAULT_RETRY, job_timeout="10m")
     with new_session() as db:
         store.attach_rq_job_id(db, job_id, rq_job.id)
+
+    logger.info(
+        "resume_submitted",
+        extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id, "rq_job_id": rq_job.id},
+    )
 
     return render_template(
         "result.html",
@@ -128,8 +169,10 @@ def admin_login():
             if user:
                 login_user(user)
                 store.log_action(db, actor=user.username, action="login")
+                logger.info("login_succeeded", extra={"username": user.username, "role": user.role})
                 dest = request.args.get("next") or url_for("recruiter.dashboard")
                 return redirect(dest)
+        logger.warning("login_failed", extra={"username": username})
         error = "Incorrect username or password."
     return render_template("admin_login.html", error=error)
 
