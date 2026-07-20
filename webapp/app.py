@@ -46,7 +46,11 @@ JD = ingest.load_job_description(ROOT / "data" / "job_description.json")
 
 init_db()  # dev/CI convenience; production should provision the schema via Alembic instead
 with new_session() as _session:
-    _JOB_POSITION_ID = store.get_or_create_job_position(_session, JD).id
+    # Seeds one active job position on a fresh database so the apply page
+    # isn't empty on first run — recruiters create/close postings from the
+    # dashboard afterwards (webapp/recruiter.py), and the apply page always
+    # reflects whatever's active in the database, not this fixture.
+    store.get_or_create_job_position(_session, JD)
 
 _SECRET_KEY = os.environ.get("FLASK_SECRET_KEY")
 if not _SECRET_KEY:
@@ -118,26 +122,52 @@ def _finish_request_log(response):
     return response
 
 
+def _open_jobs_for_template() -> list[dict]:
+    with new_session() as db:
+        jobs = store.list_active_job_positions(db)
+        return [{"id": j.id, "title": j.title, "summary": j.summary, "skills": j.required_skills[:5]} for j in jobs]
+
+
 @app.route("/")
 def index():
-    return render_template("index.html", job=JD)
+    return render_template("index.html", jobs=_open_jobs_for_template(), selected_job_id=None)
 
 
 @app.route("/apply", methods=["POST"])
 def apply():
+    job_id = request.form.get("job_id", type=int)
+    with new_session() as db:
+        job = store.get_job_position(db, job_id) if job_id is not None else None
+        job_title = job.title if job else None
+        job_active = bool(job and job.status == "active")
+
+    if not job_active:
+        return (
+            render_template(
+                "index.html",
+                jobs=_open_jobs_for_template(),
+                selected_job_id=job_id,
+                error="Please select an open position to apply for.",
+            ),
+            400,
+        )
+
     try:
         result = submit_resume(
             file=request.files.get("resume"),
             applicant_name=request.form.get("name", ""),
-            job_position_id=_JOB_POSITION_ID,
+            job_position_id=job_id,
             upload_dir=UPLOAD_DIR,
         )
     except SubmissionError as exc:
-        return render_template("index.html", job=JD, error=str(exc)), 400
+        return (
+            render_template("index.html", jobs=_open_jobs_for_template(), selected_job_id=job_id, error=str(exc)),
+            400,
+        )
 
     return render_template(
         "result.html",
-        job=JD,
+        job_title=job_title,
         applicant_name=result["applicant_name"],
         public_id=result["public_id"],
     )

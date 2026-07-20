@@ -1,18 +1,29 @@
 {% extends "base.html" %}
-{% block title %}{{ job.title }} — Apply{% endblock %}
+{% block title %}Apply for a role{% endblock %}
 {% block content %}
   <div class="hero">
-    <h1>{{ job.title }}</h1>
-    <p>{{ job.summary }}</p>
-    <div class="tags">
-      {% for s in job.required_skills[:5] %}<span class="tag">{{ s }}</span>{% endfor %}
-    </div>
+    <h1 id="hero-title">{% if jobs %}Open positions{% else %}No open positions right now{% endif %}</h1>
+    <p id="hero-summary">
+      {% if jobs %}Choose a role below to see details and apply.{% else %}Please check back soon.{% endif %}
+    </p>
+    <div class="tags" id="hero-tags"></div>
   </div>
 
+  {% if error %}<div class="panel"><div class="err">{{ error }}</div></div>{% endif %}
+
+  {% if jobs %}
   <div class="panel">
-    {% if error %}<div class="err">{{ error }}</div>{% endif %}
     <form action="{{ url_for('apply') }}" method="post" enctype="multipart/form-data" id="apply-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label for="job_id">Role you're applying for</label>
+      <select id="job_id" name="job_id" required>
+        <option value="" disabled {% if not selected_job_id %}selected{% endif %}>Select a role&hellip;</option>
+        {% for j in jobs %}
+          <option value="{{ j.id }}" {% if selected_job_id == j.id %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
+
       <label for="name">Your name</label>
       <input type="text" id="name" name="name" placeholder="Jane Doe" required>
 
@@ -32,7 +43,37 @@
       </div>
     </form>
   </div>
+  {% endif %}
 
+  <script>
+    const JOBS = {{ jobs | tojson }};
+    const SELECTED_JOB_ID = {{ selected_job_id | default(none) | tojson }};
+
+    const heroTitle = document.getElementById('hero-title');
+    const heroSummary = document.getElementById('hero-summary');
+    const heroTags = document.getElementById('hero-tags');
+    const jobSelect = document.getElementById('job_id');
+
+    function renderJobDetails(jobId) {
+      const job = JOBS.find(j => j.id === jobId);
+      if (!job) {
+        heroTitle.textContent = 'Open positions';
+        heroSummary.textContent = "Choose a role below to see details and apply.";
+        heroTags.innerHTML = '';
+        return;
+      }
+      heroTitle.textContent = job.title;
+      heroSummary.textContent = job.summary;
+      heroTags.innerHTML = job.skills.map(s => `<span class="tag">${s}</span>`).join('');
+    }
+
+    if (jobSelect) {
+      jobSelect.addEventListener('change', () => renderJobDetails(parseInt(jobSelect.value, 10)));
+      if (SELECTED_JOB_ID) renderJobDetails(SELECTED_JOB_ID);
+    }
+  </script>
+
+  {% if jobs %}
   <script>
     const zone = document.getElementById('dropzone');
     const input = document.getElementById('resume');
@@ -63,4 +104,5 @@
       submitBtn.textContent = 'Submitting…';
     });
   </script>
+  {% endif %}
 {% endblock %}

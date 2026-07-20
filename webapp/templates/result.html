@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Application received — {{ job.title }}{% endblock %}
+{% block title %}Application received{% if job_title %} — {{ job_title }}{% endif %}{% endblock %}
 {% block content %}
   <div class="hero">
     <h1>Thanks, {{ applicant_name }}!</h1>
-    <p>Your application for <strong>{{ job.title }}</strong> has been received. Our team will follow up if there's a match.</p>
+    <p>Your application{% if job_title %} for <strong>{{ job_title }}</strong>{% endif %} has been received. Our team will follow up if there's a match.</p>
   </div>
 
   <div class="panel" id="status-panel" data-public-id="{{ public_id }}">

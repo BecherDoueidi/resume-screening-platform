@@ -10,6 +10,8 @@ import io
 
 import pytest
 
+from webapp import store
+from webapp.db import new_session
 from webapp.models_db import ProcessingJob, Resume
 
 
@@ -22,25 +24,31 @@ def _mock_queue(mocker):
     return mocker.patch("webapp.submissions.get_queue", return_value=fake_queue)
 
 
-def _upload(client, name="Jane Doe", filename="resume.pdf", content=b"%PDF-1.4 fake pdf content"):
+@pytest.fixture
+def job_id(sample_jd):
+    with new_session() as s:
+        return store.get_or_create_job_position(s, sample_jd).id
+
+
+def _upload(client, job_id, name="Jane Doe", filename="resume.pdf", content=b"%PDF-1.4 fake pdf content"):
     return client.post(
         "/apply",
-        data={"name": name, "resume": (io.BytesIO(content), filename)},
+        data={"name": name, "job_id": job_id, "resume": (io.BytesIO(content), filename)},
         content_type="multipart/form-data",
     )
 
 
 class TestApplyRoute:
-    def test_returns_200_immediately(self, client):
-        resp = _upload(client)
+    def test_returns_200_immediately(self, client, job_id):
+        resp = _upload(client, job_id)
         assert resp.status_code == 200
 
-    def test_response_contains_public_id_for_polling(self, client):
-        resp = _upload(client)
+    def test_response_contains_public_id_for_polling(self, client, job_id):
+        resp = _upload(client, job_id)
         assert b"data-public-id=" in resp.data
 
-    def test_creates_applicant_resume_and_pending_job(self, client, db_session):
-        _upload(client, name="Jane Doe")
+    def test_creates_applicant_resume_and_pending_job(self, client, job_id, db_session):
+        _upload(client, job_id, name="Jane Doe")
 
         resumes = db_session.query(Resume).all()
         assert len(resumes) == 1
@@ -52,8 +60,8 @@ class TestApplyRoute:
         assert jobs[0].status == "pending"
         assert jobs[0].progress == 0
 
-    def test_enqueues_with_retry_and_stores_rq_job_id(self, client, db_session, _mock_queue):
-        _upload(client)
+    def test_enqueues_with_retry_and_stores_rq_job_id(self, client, job_id, db_session, _mock_queue):
+        _upload(client, job_id)
 
         fake_queue = _mock_queue.return_value
         fake_queue.enqueue.assert_called_once()
@@ -63,14 +71,14 @@ class TestApplyRoute:
         job = db_session.query(ProcessingJob).one()
         assert job.rq_job_id == "fake-rq-job-id"
 
-    def test_enqueue_failure_marks_job_failed_instead_of_stuck_pending(self, client, db_session, _mock_queue):
+    def test_enqueue_failure_marks_job_failed_instead_of_stuck_pending(self, client, job_id, db_session, _mock_queue):
         """If Redis is unreachable, the Resume/ProcessingJob rows are already
         committed by the time enqueue() runs — without this handling they'd
         be stuck at "pending" forever with no visible error."""
         fake_queue = _mock_queue.return_value
         fake_queue.enqueue.side_effect = ConnectionError("Redis is unreachable")
 
-        resp = _upload(client)
+        resp = _upload(client, job_id)
 
         assert resp.status_code == 400
         assert b"Could not queue your resume" in resp.data
@@ -83,39 +91,91 @@ class TestApplyRoute:
         assert resume.status == "failed"
         assert "Redis is unreachable" in resume.parse_error
 
-    def test_rejects_missing_file(self, client):
-        resp = client.post("/apply", data={"name": "Jane Doe"}, content_type="multipart/form-data")
+    def test_rejects_missing_file(self, client, job_id):
+        resp = client.post("/apply", data={"name": "Jane Doe", "job_id": job_id}, content_type="multipart/form-data")
         assert resp.status_code == 400
         assert b"choose a PDF" in resp.data
 
-    def test_rejects_non_pdf_extension(self, client):
+    def test_rejects_non_pdf_extension(self, client, job_id):
         resp = client.post(
             "/apply",
-            data={"name": "Jane Doe", "resume": (io.BytesIO(b"hello"), "resume.docx")},
+            data={"name": "Jane Doe", "job_id": job_id, "resume": (io.BytesIO(b"hello"), "resume.docx")},
             content_type="multipart/form-data",
         )
         assert resp.status_code == 400
         assert b"Only PDF" in resp.data
 
-    def test_blank_name_falls_back_to_applicant(self, client, db_session):
-        _upload(client, name="   ")
+    def test_rejects_missing_job_id(self, client):
+        resp = client.post(
+            "/apply",
+            data={"name": "Jane Doe", "resume": (io.BytesIO(b"%PDF-1.4 fake"), "resume.pdf")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 400
+        assert b"select an open position" in resp.data
+
+    def test_rejects_unknown_job_id(self, client):
+        resp = client.post(
+            "/apply",
+            data={"name": "Jane Doe", "job_id": 999999, "resume": (io.BytesIO(b"%PDF-1.4 fake"), "resume.pdf")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 400
+        assert b"select an open position" in resp.data
+
+    def test_rejects_closed_job_id(self, client, db_session):
+        with new_session() as s:
+            job = store.create_job_position(s, title="Closed Role", status="closed")
+            closed_id = job.id
+        resp = client.post(
+            "/apply",
+            data={"name": "Jane Doe", "job_id": closed_id, "resume": (io.BytesIO(b"%PDF-1.4 fake"), "resume.pdf")},
+            content_type="multipart/form-data",
+        )
+        assert resp.status_code == 400
+        assert b"select an open position" in resp.data
+
+    def test_blank_name_falls_back_to_applicant(self, client, job_id, db_session):
+        _upload(client, job_id, name="   ")
         resume = db_session.query(Resume).one()
         assert resume.applicant.full_name == "Applicant"
 
-    def test_overly_long_name_is_truncated(self, client, db_session):
-        _upload(client, name="A" * 500)
+    def test_overly_long_name_is_truncated(self, client, job_id, db_session):
+        _upload(client, job_id, name="A" * 500)
         resume = db_session.query(Resume).one()
         assert len(resume.applicant.full_name) == 200
 
-    def test_original_filename_preserved(self, client, db_session):
-        _upload(client, filename="my_resume_final_v2.pdf")
+    def test_original_filename_preserved(self, client, job_id, db_session):
+        _upload(client, job_id, filename="my_resume_final_v2.pdf")
         resume = db_session.query(Resume).one()
         assert resume.original_filename == "my_resume_final_v2.pdf"
 
 
+class TestIndexRoute:
+    def test_lists_active_job_as_an_option(self, client, job_id):
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert f'value="{job_id}"'.encode() in resp.data
+
+    def test_hides_closed_job_from_the_picker(self, client, db_session):
+        with new_session() as s:
+            job = store.create_job_position(s, title="Closed Role Hidden", status="closed")
+            closed_id = job.id
+        resp = client.get("/")
+        assert f'value="{closed_id}"'.encode() not in resp.data
+
+    def test_shows_no_openings_message_when_nothing_active(self, client, db_session):
+        with new_session() as s:
+            for j in store.list_job_positions(s):
+                j.status = "closed"
+            s.commit()
+        resp = client.get("/")
+        assert b"No open positions" in resp.data
+
+
 class TestStatusEndpoint:
-    def test_returns_pending_status_for_new_submission(self, client):
-        upload_resp = _upload(client)
+    def test_returns_pending_status_for_new_submission(self, client, job_id):
+        upload_resp = _upload(client, job_id)
         public_id = upload_resp.data.decode().split('data-public-id="')[1].split('"')[0]
 
         resp = client.get(f"/status/{public_id}")
@@ -129,14 +189,13 @@ class TestStatusEndpoint:
         resp = client.get("/status/does-not-exist")
         assert resp.status_code == 404
 
-    def test_completed_status_does_not_expose_the_evaluation(self, client, db_session):
+    def test_completed_status_does_not_expose_the_evaluation(self, client, job_id, db_session):
         """The candidate-facing polling endpoint must never leak the AI's
         score, justification, or interview questions — only that the
         submission was received and its pipeline status."""
         from screener.models import Evaluation as EvaluationResult
-        from webapp import store
 
-        upload_resp = _upload(client)
+        upload_resp = _upload(client, job_id)
         public_id = upload_resp.data.decode().split('data-public-id="')[1].split('"')[0]
         resume = db_session.query(Resume).one()
         job = db_session.query(ProcessingJob).one()

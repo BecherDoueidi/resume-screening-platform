@@ -393,6 +393,17 @@ def list_job_positions(session: Session) -> list[JobPosition]:
     return list(session.scalars(select(JobPosition).order_by(JobPosition.created_at.desc())).all())
 
 
+def list_active_job_positions(session: Session) -> list[JobPosition]:
+    """Backs the candidate-facing apply page's job picker — only postings a
+    candidate should actually be able to apply to, unlike list_job_positions
+    (used by the recruiter's Manage Jobs page, which shows closed ones too)."""
+    return list(
+        session.scalars(
+            select(JobPosition).where(JobPosition.status == "active").order_by(JobPosition.created_at.desc())
+        ).all()
+    )
+
+
 def get_job_position(session: Session, job_id: int) -> JobPosition | None:
     return session.get(JobPosition, job_id)
 
