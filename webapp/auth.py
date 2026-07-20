@@ -16,7 +16,7 @@ from __future__ import annotations
 import re
 from functools import wraps
 
-from flask import abort
+from flask import abort, jsonify
 from flask_login import LoginManager, current_user, login_required
 from sqlalchemy import select
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -28,6 +28,7 @@ __all__ = [
     "login_manager",
     "login_required",
     "require_permission",
+    "require_api_permission",
     "current_user",
     "hash_password",
     "verify_password",
@@ -66,7 +67,13 @@ def has_permission(user, permission: str) -> bool:
 
 
 def require_permission(permission: str):
-    """Like @login_required, but also 403s if the logged-in user's role lacks `permission`."""
+    """Like @login_required, but also 403s if the logged-in user's role lacks `permission`.
+
+    HTML-oriented: an unauthenticated request gets redirected to the login
+    page (flask_login's default @login_required behavior). For the JSON API
+    (webapp/api.py), use require_api_permission instead — a browser redirect
+    is not a sane response for a fetch()/curl/API-client caller.
+    """
 
     def decorator(view):
         @wraps(view)
@@ -74,6 +81,24 @@ def require_permission(permission: str):
         def wrapped(*args, **kwargs):
             if not has_permission(current_user, permission):
                 abort(403)
+            return view(*args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
+def require_api_permission(permission: str):
+    """Like require_permission, but for JSON API routes: 401 (not authenticated)
+    or 403 (authenticated, wrong role) as a JSON body, never an HTML redirect."""
+
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return jsonify(error={"code": "unauthorized", "message": "Authentication required."}), 401
+            if not has_permission(current_user, permission):
+                return jsonify(error={"code": "forbidden", "message": "Your role does not permit this action."}), 403
             return view(*args, **kwargs)
 
         return wrapped

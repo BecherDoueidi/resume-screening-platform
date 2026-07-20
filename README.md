@@ -297,6 +297,65 @@ etc.) without a separate parsing step:
 Set `LOG_LEVEL` (default `INFO`) to change verbosity; `docker-compose.yml`
 already wires it through to both `web` and `worker`.
 
+## REST API
+
+A JSON API lives under `/api/*` (`webapp/api.py`) alongside the HTML
+dashboard, for programmatic access to the same data — jobs, applicants,
+evaluations, and submissions.
+
+**Auth**: the API reuses the app's existing session-cookie login rather than
+a separate token scheme — one auth system, not two. A client logs in the
+same way a browser does (`POST /admin/login` with `username`/`password`),
+then sends the resulting session cookie on subsequent `/api/` calls. This is
+a deliberate scope decision for a project this size, not an oversight; a
+pure machine-to-machine deployment would more typically want a bearer
+token instead. CSRF protection is exempted for this blueprint (form-token
+CSRF doesn't fit non-browser JSON/multipart clients) — safe here because
+every mutating endpoint requires an explicit JSON or multipart body, not
+something a plain cross-site HTML form can forge.
+
+Every route enforces the same role permissions as the dashboard
+(`VIEW` / `MANAGE_JOBS` / `MANAGE_CANDIDATES`, see [Authentication &
+security](#authentication--security)), but reports a JSON `401`/`403`
+instead of redirecting to the login page.
+
+**Endpoints**:
+
+| Method | Path                  | Permission        | Notes                                   |
+|--------|-----------------------|--------------------|------------------------------------------|
+| GET    | `/api/jobs`           | VIEW               | paginated, `?status=active\|closed`      |
+| POST   | `/api/jobs`           | MANAGE_JOBS        | create a job position                    |
+| GET    | `/api/jobs/<id>`      | VIEW               | 404 if unknown                           |
+| POST   | `/api/resumes`        | MANAGE_CANDIDATES  | multipart upload, enqueues evaluation    |
+| GET    | `/api/resumes/<id>`   | VIEW               | candidate detail (by public id)          |
+| GET    | `/api/applicants`     | VIEW               | paginated, search/filter/sort            |
+| GET    | `/api/evaluations`    | VIEW               | paginated, only resumes with a completed evaluation |
+| GET    | `/api/dashboard`      | VIEW               | overview stats                           |
+
+**Pagination**: list endpoints accept `?page=` (default 1) and `?per_page=`
+(default 20, capped at 100) and respond with:
+
+```json
+{"data": [...], "pagination": {"page": 1, "per_page": 20, "total": 42, "total_pages": 3}}
+```
+
+**Filtering**: `/api/jobs?status=active|closed`; `/api/applicants?q=<search>&status=<recruiter status>&job_id=<id>`;
+`/api/evaluations?backend=<claude|ollama>&min_score=<0-100>&max_score=<0-100>&job_id=<id>`.
+
+**Errors** always come back as JSON, including 404s and 405s on unknown
+`/api/*` routes:
+
+```json
+{"error": {"code": "validation_error", "message": "Invalid job position payload.", "fields": {"title": "required"}}}
+```
+
+Example:
+
+```bash
+curl -c cookies.txt -X POST http://localhost:5000/admin/login -d "username=admin&password=..."
+curl -b cookies.txt "http://localhost:5000/api/applicants?status=new&per_page=10"
+```
+
 ## Pipeline
 
 ```

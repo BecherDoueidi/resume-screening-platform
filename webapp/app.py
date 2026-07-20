@@ -14,25 +14,25 @@ import logging
 import os
 import sys
 import time
-import uuid
 from pathlib import Path
 
 from dotenv import load_dotenv
 from flask import Flask, g, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.exceptions import HTTPException
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))  # allow `from screener import ...` without install
 
 from screener import ingest  # noqa: E402
 from webapp import store  # noqa: E402
+from webapp.api import api_bp  # noqa: E402
 from webapp.auth import authenticate, has_permission, login_manager  # noqa: E402
 from webapp.db import init_db, new_session  # noqa: E402
-from webapp.jobs import DEFAULT_RETRY, get_queue  # noqa: E402
 from webapp.logging_config import bind_request_id, configure_logging  # noqa: E402
 from webapp.recruiter import recruiter_bp  # noqa: E402
-from webapp.tasks import process_resume  # noqa: E402
+from webapp.submissions import SubmissionError, submit_resume  # noqa: E402
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -62,8 +62,25 @@ app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
 app.secret_key = _SECRET_KEY
 
 login_manager.init_app(app)
-CSRFProtect(app)
+csrf = CSRFProtect(app)
 app.register_blueprint(recruiter_bp)
+app.register_blueprint(api_bp)
+csrf.exempt(api_bp)  # JSON/multipart API clients, not browser forms — see webapp/api.py's module docstring
+
+
+@app.errorhandler(HTTPException)
+def _api_http_exception(exc: HTTPException):
+    """Werkzeug raises routing errors (404 on an unmatched path, 405 on a
+    wrong method) before Flask can attribute them to a blueprint, so
+    api_bp's own errorhandler never sees them — this app-level handler
+    catches the /api/* case and still returns JSON instead of Flask's
+    default HTML error page."""
+    if request.path.startswith("/api/"):
+        return (
+            jsonify(error={"code": (exc.name or "error").lower().replace(" ", "_"), "message": exc.description}),
+            exc.code or 500,
+        )
+    return exc
 
 
 @app.context_processor
@@ -108,44 +125,21 @@ def index():
 
 @app.route("/apply", methods=["POST"])
 def apply():
-    file = request.files.get("resume")
-    if not file or file.filename == "":
-        logger.warning("apply_rejected", extra={"reason": "missing_file"})
-        return render_template("index.html", job=JD, error="Please choose a PDF file."), 400
-    if not file.filename.lower().endswith(".pdf"):
-        logger.warning("apply_rejected", extra={"reason": "non_pdf_extension", "uploaded_filename": file.filename})
-        return render_template("index.html", job=JD, error="Only PDF resumes are accepted."), 400
-
-    applicant_name = (request.form.get("name", "").strip() or "Applicant")[:200]
-    saved_path = UPLOAD_DIR / f"{uuid.uuid4().hex}.pdf"
-    file.save(saved_path)
-
-    # Nothing is parsed/evaluated here — just persist the upload and hand it
-    # to the queue. The worker (webapp/tasks.py) does the actual pipeline run.
-    with new_session() as db:
-        db_resume, db_job = store.create_submission(
-            db,
+    try:
+        result = submit_resume(
+            file=request.files.get("resume"),
+            applicant_name=request.form.get("name", ""),
             job_position_id=_JOB_POSITION_ID,
-            applicant_name=applicant_name,
-            original_filename=file.filename,
-            storage_path=str(saved_path),
+            upload_dir=UPLOAD_DIR,
         )
-        public_id, resume_id, job_id = db_resume.public_id, db_resume.id, db_job.id
-
-    rq_job = get_queue().enqueue(process_resume, resume_id, job_id, retry=DEFAULT_RETRY, job_timeout="10m")
-    with new_session() as db:
-        store.attach_rq_job_id(db, job_id, rq_job.id)
-
-    logger.info(
-        "resume_submitted",
-        extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id, "rq_job_id": rq_job.id},
-    )
+    except SubmissionError as exc:
+        return render_template("index.html", job=JD, error=str(exc)), 400
 
     return render_template(
         "result.html",
         job=JD,
-        applicant_name=applicant_name,
-        public_id=public_id,
+        applicant_name=result["applicant_name"],
+        public_id=result["public_id"],
     )
 
 

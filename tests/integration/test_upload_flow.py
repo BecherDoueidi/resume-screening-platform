@@ -19,7 +19,7 @@ def _mock_queue(mocker):
     fake_job = mocker.Mock(id="fake-rq-job-id")
     fake_queue = mocker.Mock()
     fake_queue.enqueue.return_value = fake_job
-    return mocker.patch("webapp.app.get_queue", return_value=fake_queue)
+    return mocker.patch("webapp.submissions.get_queue", return_value=fake_queue)
 
 
 def _upload(client, name="Jane Doe", filename="resume.pdf", content=b"%PDF-1.4 fake pdf content"):

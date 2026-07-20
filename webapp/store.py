@@ -446,3 +446,45 @@ def set_user_active(session: Session, user_id: int, *, active: bool) -> bool:
     user.is_active = active
     session.commit()
     return True
+
+
+# --- REST API support (webapp/api.py) ---------------------------------------
+
+
+def paginate(items: list, *, page: int, per_page: int) -> tuple[list, dict]:
+    """Generic in-memory pagination — the candidate/evaluation lists here are
+    demo-scale (hundreds, not millions of rows), so slicing an already-fetched
+    list is simpler and clear enough; a real high-volume deployment would push
+    LIMIT/OFFSET into the SQL query instead."""
+    total = len(items)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * per_page
+    page_items = items[start : start + per_page]
+    return page_items, {"page": page, "per_page": per_page, "total": total, "total_pages": total_pages}
+
+
+def list_evaluations(
+    session: Session,
+    *,
+    job_position_id: int | None = None,
+    backend: str | None = None,
+    min_score: int | None = None,
+    max_score: int | None = None,
+) -> list[SimpleNamespace]:
+    """Unlike list_candidates (every submission, evaluated or not), this only
+    returns resumes that actually have an Evaluation row — for the
+    evaluations-focused GET /api/evaluations."""
+    query = select(Resume).join(Applicant).join(JobPosition).join(Evaluation)
+
+    if job_position_id:
+        query = query.where(Resume.job_position_id == job_position_id)
+    if backend:
+        query = query.where(Evaluation.backend == backend)
+    if min_score is not None:
+        query = query.where(Evaluation.overall >= min_score)
+    if max_score is not None:
+        query = query.where(Evaluation.overall <= max_score)
+
+    resumes = session.scalars(query.order_by(Resume.created_at.desc())).all()
+    return [_candidate_view(r) for r in resumes]
