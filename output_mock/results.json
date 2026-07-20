@@ -1,0 +1,1001 @@
+{
+  "job_title": "Senior Backend Engineer",
+  "generated_at": "2026-07-14T15:09:52",
+  "candidates_evaluated": 9,
+  "candidates_skipped": 1,
+  "ranking": [
+    {
+      "candidate_id": "Candidate 01",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_01_fatima.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "e69c17647e"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "ba7271c949"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "3627ef727b"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "bdd362cf39"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "ada58d786e"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "a3eda1ac1b"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 2,
+          "sample_hashes": [
+            "65d7612626",
+            "80b58544eb"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 2,
+          "sample_hashes": [
+            "ed9ad13611",
+            "b79b3a411c"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "2cda85e504",
+            "354cbfc814"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 92,
+        "experience_relevance": 90,
+        "project_impact": 94,
+        "overall": 93,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 10",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_10_siobhan.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "5f658d96fb"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "8dd69833b4"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "2274c82392"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "315a07669b"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "32feb61057"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "7ffd19b834"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 2,
+          "sample_hashes": [
+            "20fbc6f55d",
+            "02bf1dfa9a"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 2,
+          "sample_hashes": [
+            "0c7ff73f1b",
+            "949cde517c"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "2cda85e504",
+            "354cbfc814"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 90,
+        "experience_relevance": 88,
+        "project_impact": 91,
+        "overall": 90,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 02",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_02_dmitri.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "9e91808f31"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "72f1cce09a"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "60f63da046"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "bf952258cf"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "adee93f028"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "f12144e2df"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 2,
+          "sample_hashes": [
+            "aee2ee18ef",
+            "0819d71461"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 1,
+          "sample_hashes": [
+            "33a3d8ed92"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "372f7e2fd2",
+            "73c9c98668"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 89,
+        "experience_relevance": 91,
+        "project_impact": 86,
+        "overall": 88,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 03",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_03_grace.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "5fda53a29f"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "3c3175b668"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "18dd08a7f9"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "e93c7ff488"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "32feb61057"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "f4209355d0"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 3,
+          "sample_hashes": [
+            "f2465f78e0",
+            "dd528c4bbe",
+            "229c0bea2b"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 1,
+          "sample_hashes": [
+            "04952a0f98"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "2cda85e504",
+            "354cbfc814"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 87,
+        "experience_relevance": 84,
+        "project_impact": 88,
+        "overall": 86,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 06",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_06_carlos.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "cb2f517af3"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "9a22ee5838"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "4433fb4fa2"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "c5bccd0d9b"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "adee93f028"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "134d754d42"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 3,
+          "sample_hashes": [
+            "6369568f26",
+            "9aefc6ea6d",
+            "398f5996ce"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 1,
+          "sample_hashes": [
+            "a7d355b26b"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "372f7e2fd2",
+            "73c9c98668"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 63,
+        "experience_relevance": 60,
+        "project_impact": 52,
+        "overall": 59,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 05",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_05_mei-ling.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "73718af979"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "e027f1513d"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "37fe346205"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "f750f02407"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "ada58d786e"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "9f98d1d24d"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 3,
+          "sample_hashes": [
+            "9c651d4c33",
+            "66d11f45ed",
+            "ba5348eb3b"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 1,
+          "sample_hashes": [
+            "dd76af196e"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "2cda85e504",
+            "354cbfc814"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 61,
+        "experience_relevance": 55,
+        "project_impact": 57,
+        "overall": 58,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 09",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_09_hiroshi.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "9f53db5298"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "9db76ed34d"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "b906cde747"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "7fb3c7780a"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "adee93f028"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "542e004928"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 2,
+          "sample_hashes": [
+            "647294383b",
+            "b2a821bffc"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 2,
+          "sample_hashes": [
+            "27c27a09c2",
+            "1e59f6ef18"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "372f7e2fd2",
+            "73c9c98668"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 54,
+        "experience_relevance": 70,
+        "project_impact": 48,
+        "overall": 56,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 04",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_04_james.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "0a1f251fda"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "828e655b2b"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "513241526d"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "1a8b19eb64"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "adee93f028"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "22b258854f"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 2,
+          "sample_hashes": [
+            "9345a35a6f",
+            "160f2927ba"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 2,
+          "sample_hashes": [
+            "97a1926187",
+            "45cb6b4326"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "372f7e2fd2",
+            "73c9c98668"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 58,
+        "experience_relevance": 62,
+        "project_impact": 44,
+        "overall": 55,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    },
+    {
+      "candidate_id": "Candidate 07",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_07_alexander.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "6ebd8ef38c"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "0629c8d595"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "c9f25d2b94"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "d68634be26"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "adee93f028"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "2e7daf9228"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 2,
+          "sample_hashes": [
+            "dbadfc8814",
+            "4a29a4c581"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 2,
+          "sample_hashes": [
+            "8d23a6e37e",
+            "f3966925d3"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "372f7e2fd2",
+            "73c9c98668"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 22,
+        "experience_relevance": 18,
+        "project_impact": 15,
+        "overall": 19,
+        "justification": "The candidate shows direct evidence for most required skills: production Go and PostgreSQL work at scale, idempotent API design, and a measurable latency reduction (p99 900ms to 120ms). Distributed-systems depth is demonstrated through queue and retry architecture rather than keyword listing. Load-testing discipline is explicit.",
+        "gaps": [
+          "No explicit Kubernetes experience",
+          "Event streaming mentioned but depth unclear"
+        ],
+        "interview_questions": [
+          "Walk me through the partitioning redesign that cut settlement latency - what did you try first and why did it fail?",
+          "How did your idempotency keys handle retried requests that raced with the original?",
+          "Describe a capacity-planning decision you got wrong and how you detected it.",
+          "How would you migrate the ledger service to a new schema with zero downtime?"
+        ],
+        "error": ""
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "candidate_id": "Candidate 08",
+      "source_file": "C:\\Users\\bshrd\\Downloads\\scent-craft-studio-main\\Bassel Doueidi\\resume-screener\\data\\resumes\\resume_08_aisha.pdf",
+      "parse_error": "",
+      "redactions": [
+        {
+          "kind": "email",
+          "replacement": "[EMAIL]",
+          "count": 1,
+          "sample_hashes": [
+            "b0319c63b3"
+          ]
+        },
+        {
+          "kind": "url_or_handle",
+          "replacement": "[LINK]",
+          "count": 1,
+          "sample_hashes": [
+            "7a0104a611"
+          ]
+        },
+        {
+          "kind": "university",
+          "replacement": "[UNIVERSITY]",
+          "count": 1,
+          "sample_hashes": [
+            "e3e5a6a3a2"
+          ]
+        },
+        {
+          "kind": "phone",
+          "replacement": "[PHONE]",
+          "count": 1,
+          "sample_hashes": [
+            "0807e375ef"
+          ]
+        },
+        {
+          "kind": "gendered_honorific",
+          "replacement": "",
+          "count": 1,
+          "sample_hashes": [
+            "ada58d786e"
+          ]
+        },
+        {
+          "kind": "graduation_year",
+          "replacement": "[YEAR]",
+          "count": 1,
+          "sample_hashes": [
+            "6095ffd465"
+          ]
+        },
+        {
+          "kind": "location",
+          "replacement": "[LOCATION]",
+          "count": 1,
+          "sample_hashes": [
+            "38526c50d9"
+          ]
+        },
+        {
+          "kind": "person_name",
+          "replacement": "[CANDIDATE]",
+          "count": 3,
+          "sample_hashes": [
+            "aeac4a25c2",
+            "364e5f6525",
+            "465f36c857"
+          ]
+        },
+        {
+          "kind": "gendered_pronoun",
+          "replacement": "they/them/their",
+          "count": 2,
+          "sample_hashes": [
+            "2cda85e504",
+            "354cbfc814"
+          ]
+        }
+      ],
+      "evaluation": {
+        "skill_match": 0,
+        "experience_relevance": 0,
+        "project_impact": 0,
+        "overall": 0,
+        "justification": "",
+        "gaps": [],
+        "interview_questions": [],
+        "error": "Rate limited after retries"
+      }
+    }
+  ]
+}

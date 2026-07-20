@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — Apply{% endblock %}
+{% block content %}
+  <div class="hero">
+    <h1>{{ job.title }}</h1>
+    <p>{{ job.summary }}</p>
+    <div class="tags">
+      {% for s in job.required_skills[:5] %}<span class="tag">{{ s }}</span>{% endfor %}
+    </div>
+  </div>
+
+  <div class="panel">
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form action="{{ url_for('apply') }}" method="post" enctype="multipart/form-data" id="apply-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="name">Your name</label>
+      <input type="text" id="name" name="name" placeholder="Jane Doe" required>
+
+      <label for="resume">Resume (PDF)</label>
+      <div class="dropzone" id="dropzone">
+        <div class="icon">&#128196;</div>
+        <div>Drag &amp; drop your resume here, or click to browse</div>
+        <div class="hint">PDF only, up to 10&nbsp;MB</div>
+        <div class="filename" id="filename"></div>
+      </div>
+      <input type="file" id="resume" name="resume" accept="application/pdf" required>
+
+      <button type="submit" id="submit-btn">Submit Application</button>
+      <div class="privacy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7387" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg>
+        <span>Before evaluation, your resume is automatically anonymized: name, location, university, and contact details are removed so screening is based on skills and experience only.</span>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const zone = document.getElementById('dropzone');
+    const input = document.getElementById('resume');
+    const filenameEl = document.getElementById('filename');
+
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      filenameEl.textContent = input.files.length ? input.files[0].name : '';
+    });
+    ['dragover', 'dragleave', 'drop'].forEach(evt => {
+      zone.addEventListener(evt, e => {
+        e.preventDefault();
+        zone.classList.toggle('drag', evt === 'dragover');
+      });
+    });
+    zone.addEventListener('drop', e => {
+      if (e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        filenameEl.textContent = input.files[0].name;
+      }
+    });
+
+    const form = document.getElementById('apply-form');
+    const submitBtn = document.getElementById('submit-btn');
+    form.addEventListener('submit', () => {
+      if (submitBtn.disabled) return false;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting…';
+    });
+  </script>
+{% endblock %}

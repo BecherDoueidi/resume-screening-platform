@@ -1,0 +1,104 @@
+x-app-image: &app-image
+  build: .
+  image: resume-screener:latest
+
+x-app-env: &app-env
+  DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-screener}:${POSTGRES_PASSWORD:-screener}@db:5432/${POSTGRES_DB:-screener}
+  REDIS_URL: redis://redis:6379/0
+  # Insecure but functional out of the box — override in .env for anything
+  # beyond local demo use (see .env.example). The app refuses to start with
+  # no key at all, by design (see webapp/app.py) — this default only exists
+  # so `docker compose up` needs zero configuration to try the project.
+  FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-insecure-default-change-me-in-your-own-env-file}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+  ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+  ADMIN_FULL_NAME: ${ADMIN_FULL_NAME:-Administrator}
+  # Ollama is deliberately NOT containerized here (language models are large
+  # and often need host GPU access) — this reaches an Ollama server running
+  # on the host machine, if any. No effect if you're using ANTHROPIC_API_KEY
+  # instead, or running neither (the app degrades to "not evaluated" either way).
+  OLLAMA_BASE_URL: http://host.docker.internal:11434
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-screener}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-screener}
+      POSTGRES_DB: ${POSTGRES_DB:-screener}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-screener}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: applies Alembic migrations, then ensures an admin account
+  # exists (idempotent — safe to run on every `docker compose up`). web/worker
+  # wait for this to exit 0 before starting, so there is nothing to run by hand.
+  migrate:
+    <<: *app-image
+    environment:
+      <<: *app-env
+    command: sh -c "alembic upgrade head && python scripts/bootstrap_admin.py"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    <<: *app-image
+    environment:
+      <<: *app-env
+    ports:
+      - "5000:5000"
+    volumes:
+      - uploads_data:/app/webapp/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Linux Docker Engine; no-op on Docker Desktop
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    <<: *app-image
+    command: python webapp/worker.py
+    environment:
+      <<: *app-env
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - uploads_data:/app/webapp/uploads
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploads_data:

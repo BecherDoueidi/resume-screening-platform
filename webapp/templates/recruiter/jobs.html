@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Manage Job Positions{% endblock %}
+{% block content %}
+  <style>
+    .page { max-width: 900px; }
+    .job-card { margin-bottom:14px; }
+    .job-card h3 { margin:0 0 6px; }
+    .job-card .meta { color:var(--muted); font-size:12.5px; margin-bottom:10px; }
+    .job-form label { margin-top:12px; }
+    .job-form textarea {
+      width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:9px;
+      font-size:14px; font-family:inherit; min-height:70px; resize:vertical;
+    }
+    select.job-status { padding:8px 11px; border:1px solid var(--line); border-radius:8px; font-family:inherit; }
+    details.edit summary { cursor:pointer; color:var(--accent); font-size:13px; font-weight:600; margin-top:10px; }
+  </style>
+
+  <p><a href="{{ url_for('recruiter.dashboard') }}" style="color:var(--muted);text-decoration:none;font-size:13px;">&larr; Back to dashboard</a></p>
+
+  <div class="hero">
+    <h1>Job Positions</h1>
+    <p>Create and manage the roles candidates are screened against.</p>
+  </div>
+
+  {% if has_permission(current_user, 'manage_jobs') %}
+  <div class="panel job-form" style="margin-bottom:24px;">
+    <h3 style="margin-top:0;">Create a new job position</h3>
+    <form method="post" action="{{ url_for('recruiter.create_job') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Title</label>
+      <input type="text" name="title" required>
+      <label>Description / summary</label>
+      <textarea name="summary"></textarea>
+      <label>Required skills (comma-separated)</label>
+      <input type="text" name="required_skills" placeholder="Python, PostgreSQL, REST APIs">
+      <label>Minimum years of experience</label>
+      <input type="text" name="min_years_experience" placeholder="e.g. 3">
+      <label>Status</label>
+      <select name="status" class="job-status">
+        <option value="active">Active</option>
+        <option value="closed">Closed</option>
+      </select>
+      <button type="submit">Create job position</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% for j in jobs %}
+    <div class="panel job-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <h3>{{ j.title }}</h3>
+        <span class="badge {% if j.status == 'active' %}badge-shortlisted{% else %}badge-rejected{% endif %}"
+              style="display:inline-flex;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;
+              {% if j.status == 'active' %}background:#e6f7ee;color:#1e9e5a;{% else %}background:#fdeceb;color:#cc4433;{% endif %}">
+          {{ j.status|capitalize }}
+        </span>
+      </div>
+      <div class="meta">
+        {{ j.required_skills|join(', ') if j.required_skills else 'No required skills listed' }}
+        {% if j.min_years_experience %} &middot; {{ j.min_years_experience }}+ years{% endif %}
+      </div>
+      <p style="font-size:13.5px;">{{ j.summary or 'No description.' }}</p>
+
+      {% if has_permission(current_user, 'manage_jobs') %}
+      <details class="edit">
+        <summary>Edit</summary>
+        <form method="post" action="{{ url_for('recruiter.update_job', job_id=j.id) }}" class="job-form" style="margin-top:10px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Title</label>
+          <input type="text" name="title" value="{{ j.title }}" required>
+          <label>Description / summary</label>
+          <textarea name="summary">{{ j.summary }}</textarea>
+          <label>Required skills (comma-separated)</label>
+          <input type="text" name="required_skills" value="{{ j.required_skills|join(', ') }}">
+          <label>Minimum years of experience</label>
+          <input type="text" name="min_years_experience" value="{{ j.min_years_experience or '' }}">
+          <label>Status</label>
+          <select name="status" class="job-status">
+            <option value="active" {% if j.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="closed" {% if j.status == 'closed' %}selected{% endif %}>Closed</option>
+          </select>
+          <button type="submit">Save changes</button>
+        </form>
+      </details>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endblock %}

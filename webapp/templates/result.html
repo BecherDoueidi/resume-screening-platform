@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Application received — {{ job.title }}{% endblock %}
+{% block content %}
+  <div class="hero">
+    <h1>Thanks, {{ applicant_name }}!</h1>
+    <p>Your application for <strong>{{ job.title }}</strong> has been received. Our team will follow up if there's a match.</p>
+  </div>
+
+  <div class="panel" id="status-panel" data-public-id="{{ public_id }}">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div id="status-spinner" style="width:16px;height:16px;border-radius:50%;border:2px solid var(--accent);
+        border-top-color:transparent;animation:spin 0.8s linear infinite;flex:none;"></div>
+      <div>
+        <div style="font-weight:700;font-size:14px;" id="status-title">Queued for processing&hellip;</div>
+        <div style="color:var(--muted);font-size:13px;" id="status-message">Waiting for a worker to pick this up</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;height:6px;border-radius:3px;background:var(--border,#e5e7eb);overflow:hidden;">
+      <div id="status-bar" style="height:100%;width:0%;background:var(--accent);transition:width 0.3s;"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="result-panel" style="display:none;"></div>
+
+  <p style="text-align:center;margin-top:24px;">
+    <a href="{{ url_for('index') }}" style="color:var(--accent);text-decoration:none;font-weight:600;">&larr; Submit another resume</a>
+  </p>
+
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script>
+    (function () {
+      const publicId = document.getElementById('status-panel').dataset.publicId;
+      const spinner = document.getElementById('status-spinner');
+      const title = document.getElementById('status-title');
+      const message = document.getElementById('status-message');
+      const bar = document.getElementById('status-bar');
+      const statusPanel = document.getElementById('status-panel');
+      const resultPanel = document.getElementById('result-panel');
+
+      const TITLES = {
+        pending: 'Queued for processing…',
+        processing: 'Screening your resume…',
+        completed: 'Done!',
+        failed: 'Something went wrong',
+      };
+
+      async function poll() {
+        let data;
+        try {
+          const resp = await fetch('/status/' + publicId);
+          data = await resp.json();
+        } catch (e) {
+          setTimeout(poll, 3000);
+          return;
+        }
+
+        title.textContent = TITLES[data.status] || data.status;
+        message.textContent = data.message || '';
+        bar.style.width = (data.progress || 0) + '%';
+
+        if (data.status === 'completed' || data.status === 'failed') {
+          spinner.style.display = 'none';
+          statusPanel.style.display = 'none';
+          resultPanel.style.display = 'block';
+
+          if (data.parse_error) {
+            resultPanel.innerHTML =
+              '<div class="err">We couldn\'t read your PDF: ' + data.parse_error +
+              '. Please try re-exporting it and upload again.</div>';
+          } else if (data.eval_error) {
+            resultPanel.innerHTML = '<div class="err">Evaluation error: ' + data.eval_error + '</div>';
+          } else if (data.card_doc) {
+            const iframe = document.createElement('iframe');
+            iframe.title = 'Evaluation result';
+            iframe.srcdoc = data.card_doc;
+            iframe.style.cssText = 'width:100%;border:0;display:block;';
+            iframe.scrolling = 'no';
+            iframe.onload = function () {
+              iframe.style.height = (iframe.contentWindow.document.body.scrollHeight + 24) + 'px';
+            };
+            resultPanel.appendChild(iframe);
+          } else {
+            resultPanel.innerHTML =
+              '<div style="font-weight:700;font-size:14px;">&#9989; Application submitted</div>' +
+              '<div style="color:var(--muted);font-size:13.5px;margin-top:6px;">' +
+              'Your resume has been anonymized and passed along for review.</div>';
+          }
+          return;
+        }
+
+        setTimeout(poll, 2000);
+      }
+
+      poll();
+    })();
+  </script>
+{% endblock %}

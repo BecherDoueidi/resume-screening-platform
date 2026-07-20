@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+  <style>
+    .page { max-width: 800px; }
+    table.users { width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px; }
+    table.users th { text-align:left; color:var(--muted); font-size:11.5px; text-transform:uppercase;
+      letter-spacing:.03em; padding:8px 10px; border-bottom:1px solid var(--line); }
+    table.users td { padding:8px 10px; border-bottom:1px solid var(--line); }
+    select.role-select { padding:8px 11px; border:1px solid var(--line); border-radius:8px; font-family:inherit; }
+    .btn-danger-text { color:#cc4433; background:none; border:0; cursor:pointer; font-size:12.5px; font-weight:600; padding:0; }
+  </style>
+
+  <p><a href="{{ url_for('recruiter.dashboard') }}" style="color:var(--muted);text-decoration:none;font-size:13px;">&larr; Back to dashboard</a></p>
+
+  <div class="hero">
+    <h1>Manage Users</h1>
+    <p>Create accounts for recruiters and viewers. Admin only.</p>
+  </div>
+
+  <div class="panel" style="margin-bottom:24px;">
+    <h3 style="margin-top:0;">Create a new user</h3>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="post" action="{{ url_for('recruiter.create_user_route') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Username</label>
+      <input type="text" name="username" required>
+      <label>Full name</label>
+      <input type="text" name="full_name">
+      <label>Password</label>
+      <input type="password" name="password" minlength="8" required>
+      <label>Role</label>
+      <select name="role" class="role-select">
+        {% for r in roles %}
+          <option value="{{ r }}">{{ r|capitalize }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Create user</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">Existing users</h3>
+    <table class="users">
+      <thead><tr><th>Username</th><th>Full name</th><th>Role</th><th>Active</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td style="font-weight:600;">{{ u.username }}</td>
+            <td>{{ u.full_name or '—' }}</td>
+            <td>{{ u.role|capitalize }}</td>
+            <td>{{ 'Yes' if u.is_active else 'No' }}</td>
+            <td style="color:var(--muted);white-space:nowrap;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+              {% if u.is_active and u.id != current_user.id %}
+                <form method="post" action="{{ url_for('recruiter.deactivate_user', user_id=u.id) }}"
+                      onsubmit="return confirm('Deactivate {{ u.username }}?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn-danger-text">Deactivate</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

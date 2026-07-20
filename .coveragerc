@@ -1,0 +1,8 @@
+[run]
+omit =
+    webapp/worker.py
+    scripts/*
+    migrations/*
+    screener/__main__.py
+    screener/cli.py
+    tests/*

@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Careers{% endblock %}</title>
+  <style>
+    :root {
+      --bg: #f6f7fb; --card: #ffffff; --ink: #1b2233; --muted: #6b7387;
+      --accent: #3457e6; --accent-dark: #2542bd; --line: #e5e8f0;
+      --good: #1e9e5a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 15px/1.6 "Segoe UI", system-ui, sans-serif;
+      background: linear-gradient(180deg, #eef1fb 0%, var(--bg) 320px);
+      color: var(--ink);
+    }
+    .topbar {
+      padding: 22px 32px; display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--line); background: #fff;
+    }
+    .topbar .logo {
+      width: 34px; height: 34px; border-radius: 9px; background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 15px;
+    }
+    .topbar .brand { font-weight: 700; font-size: 16px; }
+    .topbar .brand small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+    .topbar .admin-link {
+      margin-left: auto; color: var(--muted); font-size: 13px; text-decoration: none;
+      padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px; font-weight: 600;
+      transition: color .15s, border-color .15s;
+    }
+    .topbar .admin-link:hover { color: var(--accent); border-color: var(--accent); }
+    .page { max-width: 720px; margin: 0 auto; padding: 48px 20px 64px; }
+    .hero { margin-bottom: 32px; }
+    .hero h1 { font-size: 28px; margin: 0 0 8px; }
+    .hero p { color: var(--muted); margin: 0; }
+    .tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      background: #eef1ff; color: var(--accent-dark); border-radius: 20px;
+      padding: 4px 12px; font-size: 12.5px; font-weight: 600;
+    }
+    .panel {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 28px 28px 24px; box-shadow: 0 1px 3px rgba(20,30,60,.05);
+    }
+    label { display: block; font-weight: 600; font-size: 13px; margin: 18px 0 6px; }
+    label:first-child { margin-top: 0; }
+    input[type=text] {
+      width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px;
+      font-size: 14.5px; font-family: inherit;
+    }
+    input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .dropzone {
+      border: 2px dashed #c7cdf0; border-radius: 12px; padding: 28px 16px;
+      text-align: center; background: #fafbff; cursor: pointer; transition: border-color .15s;
+    }
+    .dropzone.drag { border-color: var(--accent); background: #f0f3ff; }
+    .dropzone .icon { font-size: 26px; margin-bottom: 6px; }
+    .dropzone .hint { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+    .dropzone .filename { margin-top: 10px; font-weight: 600; color: var(--accent-dark); font-size: 13.5px; }
+    input[type=file] { display: none; }
+    button {
+      margin-top: 22px; width: 100%; padding: 13px; border: 0; border-radius: 9px;
+      background: var(--accent); color: #fff; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background .15s;
+    }
+    button:hover { background: var(--accent-dark); }
+    .err {
+      background: #fdeceb; color: #a8332a; border: 1px solid #f4c6c1; border-radius: 9px;
+      padding: 10px 14px; font-size: 13.5px; margin-bottom: 16px;
+    }
+    .privacy { margin-top: 16px; color: var(--muted); font-size: 12.5px; display: flex; gap: 8px; }
+    .privacy svg { flex: none; margin-top: 2px; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">AI</div>
+    <div class="brand">Acme Talent Portal<small>Demo — Resume Screening &amp; Talent Matching Agent</small></div>
+    {% if current_user.is_authenticated %}
+      <span style="margin-left:auto;color:var(--muted);font-size:13px;">
+        {{ current_user.username }} <strong style="color:var(--ink);">({{ current_user.role }})</strong>
+      </span>
+      <a class="admin-link" style="margin-left:12px;" href="{{ url_for('recruiter.dashboard') }}">Dashboard</a>
+    {% else %}
+      <a class="admin-link" href="{{ url_for('recruiter.dashboard') }}">Admin</a>
+    {% endif %}
+  </div>
+  <div class="page">
+    {% block content %}{% endblock %}
+    <footer>This is a demo application. Uploaded resumes are anonymized before any AI evaluation.</footer>
+  </div>
+  <script>
+    // Read once, reused by every fetch() POST in the dashboard templates —
+    // Flask-WTF's CSRFProtect rejects state-changing requests without it.
+    window.CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+  </script>
+</body>
+</html>

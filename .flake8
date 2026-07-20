@@ -1,0 +1,28 @@
+[flake8]
+max-line-length = 120
+extend-ignore =
+    # E203/W503 conflict with Black's formatting choices (whitespace before
+    # ':' in slices, line break before a binary operator — Black's is the
+    # modern, correct convention in both cases).
+    E203,
+    W503
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    migrations/versions,
+    tests/__pycache__
+
+# These specific files have long lines that are content, not code structure —
+# LLM prompt text, a redaction regex, and sample-resume prose — wrapping them
+# would either corrupt the literal string sent to the model/regex engine or
+# make the sample data harder to read for no benefit. Everywhere else, E501
+# still applies at the full 120-char limit.
+per-file-ignores =
+    screener/anonymize.py:E501
+    screener/cli.py:E501
+    screener/evaluate.py:E501
+    screener/evaluate_ollama.py:E501
+    screener/report.py:E501
+    scripts/make_sample_resumes.py:E501

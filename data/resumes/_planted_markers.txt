@@ -1,0 +1,50 @@
+Fatima Al-Zahrani
+Riyadh
+King Saud University
+fatima.alzahrani@example.com
++966 50 123 4567
+Dmitri Volkov
+Novosibirsk
+Novosibirsk State Technical College
+d.volkov88@example.com
++7 913 555 0142
+Grace Okafor
+Lagos
+Massachusetts Institute of Technology
+grace.okafor@example.com
+(617) 555-0199
+James Whitmore III
+Greenwich
+Harvard University
+jwhitmore@example.com
+(203) 555-0107
+Mei-Ling Chen
+Taipei
+National Taiwan University
+meiling.chen@example.com
++886 2 5555 0134
+Carlos Mendoza-Reyes
+Guadalajara
+Instituto Tecnológico de Guadalajara
+cmendoza@example.com
++52 33 5555 0128
+Alexander Pemberton
+Oxford
+University of Oxford
+a.pemberton@example.com
++44 20 5555 0163
+Aisha Diallo
+Dakar
+Dakar Community College
+aisha.diallo@example.com
++221 77 555 0181
+Hiroshi Tanaka
+Osaka
+Osaka Vocational Institute
+h.tanaka@example.com
++81 6 5555 0177
+Siobhan O'Sullivan
+Cork
+University College Cork
+siobhan.osullivan@example.com
++353 21 555 0146

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Recruiter Dashboard{% endblock %}
+{% block content %}
+  <style>
+    .page { max-width: 1300px; }
+    .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+    .stat-card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; }
+    .stat-card .label { color:var(--muted); font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+    .stat-card .value { font-size:28px; font-weight:700; margin-top:6px; }
+    .filters { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; }
+    .filters input[type=text], .filters select {
+      padding:8px 11px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; font-family:inherit;
+    }
+    .filters input[type=text] { width:220px; }
+    .btn { display:inline-block; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600;
+      text-decoration:none; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink); }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { color:#cc4433; border-color:#cc4433; }
+    table.candidates { width:100%; border-collapse:collapse; font-size:13.5px; }
+    table.candidates th { text-align:left; color:var(--muted); font-size:11.5px; text-transform:uppercase;
+      letter-spacing:.03em; padding:10px 12px; border-bottom:1px solid var(--line); }
+    table.candidates td { padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle; }
+    table.candidates tr:hover td { background:#fafbff; }
+    .score { font-weight:700; }
+    .score-good { color:#1e9e5a; } .score-mid { color:#d9930d; } .score-bad { color:#cc4433; }
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:700; }
+    .badge-new { background:#eef1ff; color:#3457e6; }
+    .badge-shortlisted { background:#e6f7ee; color:#1e9e5a; }
+    .badge-interview { background:#fff4e0; color:#d9930d; }
+    .badge-rejected { background:#fdeceb; color:#cc4433; }
+    .badge-inflight { background:#eef1ff; color:#5b6b9c; }
+    .dot { width:7px; height:7px; border-radius:50%; background:currentColor; display:inline-block; }
+    .status-select { border:1px solid var(--line); border-radius:6px; font-size:12px; padding:3px 6px; font-family:inherit; }
+  </style>
+
+  <div class="hero" style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>Recruiter Dashboard</h1>
+      <p>Manage applicants, job positions, and rankings.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <a class="btn" href="{{ url_for('recruiter.jobs') }}">{% if has_permission(current_user, 'manage_jobs') %}Manage jobs{% else %}View jobs{% endif %}</a>
+      {% if has_permission(current_user, 'manage_users') %}
+        <a class="btn" href="{{ url_for('recruiter.users') }}">Manage users</a>
+      {% endif %}
+      <a class="admin-link" href="{{ url_for('admin_logout') }}" style="padding:8px 14px;">Log out</a>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="label">Total applicants</div><div class="value">{{ stats.total_applicants }}</div></div>
+    <div class="stat-card"><div class="label">Active jobs</div><div class="value">{{ stats.active_jobs }}</div></div>
+    <div class="stat-card"><div class="label">Completed evaluations</div><div class="value">{{ stats.completed_evaluations }}</div></div>
+    <div class="stat-card"><div class="label">Processing queue</div><div class="value">{{ stats.processing_queue }}</div></div>
+  </div>
+
+  <form class="filters" method="get" action="{{ url_for('recruiter.dashboard') }}">
+    <input type="text" name="q" placeholder="Search name or filename…" value="{{ filters.q }}">
+    <select name="job">
+      <option value="">All jobs</option>
+      {% for j in jobs %}
+        <option value="{{ j.id }}" {% if filters.job == j.id %}selected{% endif %}>{{ j.title }}</option>
+      {% endfor %}
+    </select>
+    <select name="status">
+      <option value="">Any recruiter status</option>
+      {% for s in recruiter_statuses %}
+        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+    <select name="eval_status">
+      <option value="">Any eval status</option>
+      {% for s in ['pending','processing','evaluated','failed'] %}
+        <option value="{{ s }}" {% if filters.eval_status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+      {% endfor %}
+    </select>
+    <select name="sort">
+      {% for opt, label in [('date_desc','Newest first'), ('date_asc','Oldest first'),
+                             ('score_desc','Score: high to low'), ('score_asc','Score: low to high'),
+                             ('name_asc','Name A-Z'), ('name_desc','Name Z-A')] %}
+        <option value="{{ opt }}" {% if filters.sort == opt %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" style="margin:0;width:auto;padding:8px 16px;">Apply</button>
+    <a class="btn" href="{{ url_for('recruiter.export_csv', q=filters.q, job=filters.job, status=filters.status, eval_status=filters.eval_status, sort=filters.sort) }}">Export CSV</a>
+    <a class="btn" href="{{ url_for('recruiter.export_json', q=filters.q, job=filters.job, status=filters.status, eval_status=filters.eval_status, sort=filters.sort) }}">Export JSON</a>
+    {% if candidates and has_permission(current_user, 'delete_all') %}
+      <form action="{{ url_for('recruiter.delete_all') }}" method="post" style="display:inline;"
+            onsubmit="return confirm('Delete all {{ candidates|length }} candidates shown? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger" style="margin:0;width:auto;">Delete all</button>
+      </form>
+    {% endif %}
+  </form>
+
+  <div class="panel" style="padding:0;overflow-x:auto;">
+    {% if not candidates %}
+      <div style="padding:24px;">No candidates match these filters.</div>
+    {% else %}
+      <table class="candidates">
+        <thead>
+          <tr>
+            <th>Candidate</th><th>Job</th><th>Submitted</th><th>Status</th>
+            <th>Overall</th><th>Skills</th><th>Experience</th><th>Project impact</th>
+            <th>Bias audit</th><th>Recruiter status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in candidates %}
+            <tr class="status-cell" data-id="{{ c.id }}" data-status="{{ c.job_status }}">
+              <td><a href="{{ url_for('recruiter.candidate_detail', public_id=c.id) }}" style="font-weight:700;color:var(--ink);text-decoration:none;">{{ c.name }}</a></td>
+              <td style="color:var(--muted);">{{ c.job_title }}</td>
+              <td style="color:var(--muted);white-space:nowrap;">{{ c.submitted_at }}</td>
+              <td>
+                {% if c.job_status in ('pending','processing') %}
+                  <span class="badge badge-inflight"><span class="dot" style="animation:pulse 1s ease-in-out infinite;"></span>{{ c.job_message }} ({{ c.job_progress }}%)</span>
+                {% elif c.parse_error %}
+                  <span class="badge badge-rejected">Unreadable PDF</span>
+                {% elif c.eval_error %}
+                  <span class="badge badge-rejected">Eval error</span>
+                {% else %}
+                  <span class="badge badge-shortlisted">Evaluated</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if c.overall is not none %}
+                  <span class="score {% if c.overall >= 70 %}score-good{% elif c.overall >= 45 %}score-mid{% else %}score-bad{% endif %}">{{ c.overall }}</span>
+                {% else %}&mdash;{% endif %}
+              </td>
+              <td>{{ c.skill_match if c.skill_match is not none else '—' }}</td>
+              <td>{{ c.experience_relevance if c.experience_relevance is not none else '—' }}</td>
+              <td>{{ c.project_impact if c.project_impact is not none else '—' }}</td>
+              <td style="color:var(--muted);">{{ c.redaction_count }} redactions</td>
+              <td>
+                {% if has_permission(current_user, 'manage_candidates') %}
+                  <select class="status-select" onchange="setStatus('{{ c.id }}', this.value)">
+                    {% for s in recruiter_statuses %}
+                      <option value="{{ s }}" {% if c.recruiter_status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+                    {% endfor %}
+                  </select>
+                {% else %}
+                  <span class="badge badge-new">{{ c.recruiter_status|capitalize }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if has_permission(current_user, 'manage_candidates') %}
+                  <button type="button" onclick="deleteCandidate('{{ c.id }}')" title="Delete"
+                          style="background:none;border:0;cursor:pointer;color:#9aa1b0;padding:4px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6h18"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                      <path d="M19 6l-1 14c0 1-1 2-2 2H8c-1 0-2-1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+                    </svg>
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+
+  <style>
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+  <script>
+    function setStatus(id, status) {
+      fetch(`/admin/candidates/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
+        body: JSON.stringify({ status }),
+      });
+    }
+    function deleteCandidate(id) {
+      if (!confirm('Delete this candidate?')) return;
+      fetch(`/admin/delete/${id}`, { method: 'POST', headers: { 'X-CSRFToken': window.CSRF_TOKEN } })
+        .then(() => window.location.reload());
+    }
+
+    (function pollInFlight() {
+      const inFlight = Array.from(document.querySelectorAll('.status-cell'))
+        .filter(el => el.dataset.status === 'pending' || el.dataset.status === 'processing');
+      if (inFlight.length === 0) return;
+      Promise.all(inFlight.map(el => fetch('/status/' + el.dataset.id).then(r => r.json()).then(data => ({ el, data }))))
+        .then(results => {
+          const anyDone = results.some(({ data }) => data.status === 'completed' || data.status === 'failed');
+          if (anyDone) window.location.reload();
+          else setTimeout(pollInFlight, 3000);
+        }).catch(() => setTimeout(pollInFlight, 5000));
+    })();
+  </script>
+{% endblock %}

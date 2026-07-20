@@ -1,0 +1,21 @@
+.git
+.github
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+coverage.xml
+htmlcov
+
+# Large local-only dataset and generated artifacts — not needed at runtime.
+data/kaggle_resumes
+data/resumes
+webapp/uploads/*.pdf
+webapp/*.db
+output/
+output_mock/
+tests/
+
+.env

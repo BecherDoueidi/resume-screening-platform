@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }} — Candidate{% endblock %}
+{% block content %}
+  <style>
+    .page { max-width: 900px; }
+    .kv { display:flex; gap:8px; margin-bottom:6px; font-size:13.5px; }
+    .kv .k { color:var(--muted); min-width:140px; }
+    .status-select { border:1px solid var(--line); border-radius:8px; font-size:13px; padding:6px 10px; font-family:inherit; }
+    pre.anon-text { white-space:pre-wrap; font-family:inherit; font-size:13px; background:#fafbff;
+      border:1px solid var(--line); border-radius:10px; padding:16px; max-height:420px; overflow-y:auto; }
+    table.redactions { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
+    table.redactions th, table.redactions td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); }
+  </style>
+
+  <p><a href="{{ url_for('recruiter.dashboard') }}" style="color:var(--muted);text-decoration:none;font-size:13px;">&larr; Back to dashboard</a></p>
+
+  <div class="hero" style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h1>{{ c.name }}</h1>
+      <p>Applied for <strong>{{ c.job_title }}</strong> &middot; {{ c.submitted_at }}</p>
+    </div>
+    {% if has_permission(current_user, 'manage_candidates') %}
+      <select class="status-select" onchange="setStatus(this.value)">
+        {% for s in recruiter_statuses %}
+          <option value="{{ s }}" {% if c.recruiter_status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <span style="font-size:13px;color:var(--muted);">Status: <strong style="color:var(--ink);">{{ c.recruiter_status|capitalize }}</strong></span>
+    {% endif %}
+  </div>
+
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="kv"><span class="k">Original filename</span><span>{{ c.filename }}</span></div>
+    <div class="kv"><span class="k">Original resume</span><span><a href="{{ url_for('recruiter.candidate_resume_file', public_id=c.id) }}" target="_blank">Open PDF</a></span></div>
+    <div class="kv"><span class="k">Evaluation backend</span><span>{{ c.backend }}</span></div>
+    <div class="kv"><span class="k">Pipeline status</span><span>{{ c.job_status }} ({{ c.job_progress }}%) &mdash; {{ c.job_message }}</span></div>
+    {% if c.parse_error %}<div class="kv"><span class="k">Parse error</span><span class="err" style="margin:0;">{{ c.parse_error }}</span></div>{% endif %}
+    {% if c.eval_error %}<div class="kv"><span class="k">Eval error</span><span class="err" style="margin:0;">{{ c.eval_error }}</span></div>{% endif %}
+  </div>
+
+  {% if c.overall is not none %}
+    <div class="panel" style="margin-bottom:16px;">
+      <h3 style="margin-top:0;">Scores</h3>
+      <div class="kv"><span class="k">Overall</span><span style="font-weight:700;">{{ c.overall }}</span></div>
+      <div class="kv"><span class="k">Skills</span><span>{{ c.skill_match }}</span></div>
+      <div class="kv"><span class="k">Experience</span><span>{{ c.experience_relevance }}</span></div>
+      <div class="kv"><span class="k">Project impact</span><span>{{ c.project_impact }}</span></div>
+      {% if c.justification %}
+        <h4>Why this ranking</h4>
+        <p style="font-size:13.5px;">{{ c.justification }}</p>
+      {% endif %}
+      {% if c.gaps %}
+        <h4>Gaps vs. requirements</h4>
+        <ul>{% for g in c.gaps %}<li>{{ g }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if c.interview_questions %}
+        <h4>Suggested interview questions</h4>
+        <ul>{% for q in c.interview_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="panel" style="margin-bottom:16px;">
+    <h3 style="margin-top:0;">Bias mitigation audit ({{ c.redactions|length }} redaction categories)</h3>
+    {% if c.redactions %}
+      <table class="redactions">
+        <thead><tr><th>Indicator type</th><th>Replaced with</th><th>Count</th></tr></thead>
+        <tbody>
+          {% for r in c.redactions %}
+            <tr><td>{{ r.kind }}</td><td>{{ r.replacement }}</td><td>{{ r.count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color:var(--muted);font-size:13.5px;">No redaction records yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">Anonymized resume text</h3>
+    <p style="color:var(--muted);font-size:12.5px;">
+      This is exactly what was sent to the AI model — never the original text. Original values are hashed, not stored.
+    </p>
+    {% if c.anonymized_text %}
+      <pre class="anon-text">{{ c.anonymized_text }}</pre>
+    {% else %}
+      <p style="color:var(--muted);font-size:13.5px;">Not available yet (still processing, or the resume failed to parse).</p>
+    {% endif %}
+  </div>
+
+  <script>
+    function setStatus(status) {
+      fetch("{{ url_for('recruiter.set_candidate_status', public_id=c.id) }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
+        body: JSON.stringify({ status }),
+      });
+    }
+  </script>
+{% endblock %}

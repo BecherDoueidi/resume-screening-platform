@@ -1,0 +1,24 @@
+{
+  "title": "Senior Backend Engineer",
+  "summary": "We are hiring a Senior Backend Engineer to design and scale the services behind our payments platform. You will own critical systems end-to-end: API design, data modeling, performance, and reliability. You will work with product and infrastructure teams to ship features used by millions of customers.",
+  "required_skills": [
+    "Python or Go in production at scale",
+    "Relational databases (PostgreSQL or MySQL): schema design, query optimization",
+    "Designing and operating REST or gRPC APIs",
+    "Distributed systems fundamentals: queues, caching, idempotency, retries",
+    "Testing discipline: unit, integration, and load testing"
+  ],
+  "nice_to_have": [
+    "Kubernetes and containerized deployment",
+    "Event streaming (Kafka or similar)",
+    "Experience in payments, fintech, or other correctness-critical domains",
+    "Observability tooling (Prometheus, Grafana, distributed tracing)"
+  ],
+  "min_years_experience": 5,
+  "responsibilities": [
+    "Design, build, and operate backend services for payment processing",
+    "Lead technical design reviews and mentor mid-level engineers",
+    "Drive reliability improvements: SLOs, incident response, capacity planning",
+    "Collaborate with product managers to scope and deliver features"
+  ]
+}
