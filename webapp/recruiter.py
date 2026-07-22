@@ -305,6 +305,22 @@ def activate_user(user_id):
     return redirect(url_for("recruiter.users"))
 
 
+@recruiter_bp.route("/users/<int:user_id>/delete", methods=["POST"])
+@require_permission(MANAGE_USERS)
+def delete_user_route(user_id):
+    if user_id == current_user.id:
+        # Deleting your own account mid-session would immediately invalidate
+        # the login that just authorized the request — deactivate instead.
+        return redirect(url_for("recruiter.users"))
+    with new_session() as db:
+        ok = store.delete_user(db, user_id)
+        if ok:
+            store.log_action(db, actor=current_user.username, action="delete_user", details={"user_id": user_id})
+    if ok:
+        logger.warning("user_deleted", extra={"actor": current_user.username, "user_id": user_id})
+    return redirect(url_for("recruiter.users"))
+
+
 # --- Export --------------------------------------------------------------
 
 _EXPORT_FIELDS = [

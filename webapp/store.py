@@ -499,6 +499,19 @@ def set_user_active(session: Session, user_id: int, *, active: bool) -> bool:
     return True
 
 
+def delete_user(session: Session, user_id: int) -> bool:
+    """Permanently removes an account. Job positions it created are kept
+    (created_by_user_id is nullable, ON DELETE SET NULL) and audit-log
+    entries reference the actor by username string, not a foreign key, so
+    neither is affected by this deletion."""
+    user = session.get(User, user_id)
+    if not user:
+        return False
+    session.delete(user)
+    session.commit()
+    return True
+
+
 # --- REST API support (webapp/api.py) ---------------------------------------
 
 

@@ -405,6 +405,45 @@ class TestUserManagement:
         resp = client.post(f"/admin/users/{recruiter_user.id}/activate")
         assert resp.status_code == 403
 
+    def test_admin_can_delete_user(self, admin_client, recruiter_user, db_session):
+        from webapp.models_db import User
+
+        resp = admin_client.post(f"/admin/users/{recruiter_user.id}/delete")
+        assert resp.status_code == 302
+        assert db_session.query(User).filter_by(id=recruiter_user.id).first() is None
+
+    def test_admin_cannot_delete_own_account(self, admin_client, admin_user, db_session):
+        from webapp.models_db import User
+
+        resp = admin_client.post(f"/admin/users/{admin_user.id}/delete")
+        assert resp.status_code == 302
+        assert db_session.query(User).filter_by(id=admin_user.id).first() is not None
+
+    def test_viewer_cannot_delete_user(self, viewer_client, recruiter_user, db_session):
+        from webapp.models_db import User
+
+        resp = viewer_client.post(f"/admin/users/{recruiter_user.id}/delete")
+        assert resp.status_code == 403
+        assert db_session.query(User).filter_by(id=recruiter_user.id).first() is not None
+
+    def test_deleting_user_keeps_their_created_job_positions(self, admin_client, recruiter_user, db_session):
+        from webapp.models_db import JobPosition
+
+        job = JobPosition(title="Orphaned Job", created_by_user_id=recruiter_user.id)
+        db_session.add(job)
+        db_session.commit()
+        job_id = job.id
+
+        admin_client.post(f"/admin/users/{recruiter_user.id}/delete")
+        db_session.expire_all()
+
+        kept = db_session.query(JobPosition).filter_by(id=job_id).one()
+        assert kept.created_by_user_id is None
+
+    def test_users_page_lists_delete_button_for_others(self, admin_client, recruiter_user):
+        resp = admin_client.get("/admin/users")
+        assert b"Delete" in resp.data
+
 
 class TestExport:
     def test_csv_export_contains_candidate(self, admin_client, evaluated_candidate):

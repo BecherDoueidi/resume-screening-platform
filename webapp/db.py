@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
@@ -45,8 +45,21 @@ def get_engine():
     global _engine
     if _engine is None:
         url = _database_url()
-        connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+        is_sqlite = url.startswith("sqlite")
+        connect_args = {"check_same_thread": False} if is_sqlite else {}
         _engine = create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+        if is_sqlite:
+            # SQLite ignores foreign key constraints (including ON DELETE
+            # CASCADE/SET NULL) unless explicitly told to enforce them, per
+            # connection. Without this, the sqlite dev/CI fallback silently
+            # skips referential-integrity behavior that works correctly
+            # against the real Postgres used in production.
+            @event.listens_for(_engine, "connect")
+            def _enable_sqlite_foreign_keys(dbapi_connection, _record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.close()
+
     return _engine
 
 

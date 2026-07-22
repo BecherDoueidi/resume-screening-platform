@@ -52,17 +52,25 @@
             <td>{{ u.role|capitalize }}</td>
             <td>{{ 'Yes' if u.is_active else 'No' }}</td>
             <td style="color:var(--muted);white-space:nowrap;">{{ u.created_at.strftime('%Y-%m-%d') }}</td>
-            <td>
+            <td style="white-space:nowrap;">
               {% if u.is_active and u.id != current_user.id %}
                 <form method="post" action="{{ url_for('recruiter.deactivate_user', user_id=u.id) }}"
-                      onsubmit="return confirm('Deactivate {{ u.username }}?');">
+                      style="display:inline;" onsubmit="return confirm('Deactivate {{ u.username }}?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn-danger-text">Deactivate</button>
                 </form>
               {% elif not u.is_active %}
-                <form method="post" action="{{ url_for('recruiter.activate_user', user_id=u.id) }}">
+                <form method="post" action="{{ url_for('recruiter.activate_user', user_id=u.id) }}" style="display:inline;">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn-active-text">Activate</button>
+                </form>
+              {% endif %}
+              {% if u.id != current_user.id %}
+                <form method="post" action="{{ url_for('recruiter.delete_user_route', user_id=u.id) }}"
+                      style="display:inline;margin-left:10px;"
+                      onsubmit="return confirm('Permanently delete {{ u.username }}? This cannot be undone.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn-danger-text">Delete</button>
                 </form>
               {% endif %}
             </td>
