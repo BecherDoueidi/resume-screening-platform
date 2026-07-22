@@ -8,8 +8,11 @@
       letter-spacing:.03em; padding:8px 10px; border-bottom:1px solid var(--line); }
     table.users td { padding:8px 10px; border-bottom:1px solid var(--line); }
     select.role-select { padding:8px 11px; border:1px solid var(--line); border-radius:8px; font-family:inherit; }
-    .btn-danger-text { color:#cc4433; background:none; border:0; cursor:pointer; font-size:12.5px; font-weight:600; padding:0; }
-    .btn-active-text { color:#1e9e5a; background:none; border:0; cursor:pointer; font-size:12.5px; font-weight:600; padding:0; }
+    .btn-danger-text, .btn-active-text {
+      width:auto; margin-top:0; border:0; cursor:pointer; font-size:12.5px; font-weight:600; padding:0; background:none;
+    }
+    .btn-danger-text { color:#cc4433; }
+    .btn-active-text { color:#1e9e5a; }
   </style>
 
   <p><a href="{{ url_for('recruiter.dashboard') }}" style="color:var(--muted);text-decoration:none;font-size:13px;">&larr; Back to dashboard</a></p>
