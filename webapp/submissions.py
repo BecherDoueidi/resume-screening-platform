@@ -26,6 +26,31 @@ class SubmissionError(ValueError):
     this into whatever error response shape fits their route (HTML vs JSON)."""
 
 
+def enqueue_processing(*, resume_id: int, job_id: int, public_id: str) -> str:
+    """Enqueues the background evaluation job, or marks it failed instead of
+    leaving it stuck at "pending" forever if Redis is unreachable. Shared by
+    a fresh submission and a recruiter-triggered retry of a failed one, so
+    both get the same failure handling. Returns the RQ job id."""
+    try:
+        rq_job = get_queue().enqueue(process_resume, resume_id, job_id, retry=DEFAULT_RETRY, job_timeout="10m")
+    except Exception as exc:
+        logger.error(
+            "enqueue_failed", extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id}, exc_info=True
+        )
+        with new_session() as db:
+            store.fail_resume(db, job_id, error=str(exc), retryable=False)
+        raise SubmissionError("Could not queue your resume for processing. Please try again shortly.") from exc
+
+    with new_session() as db:
+        store.attach_rq_job_id(db, job_id, rq_job.id)
+
+    logger.info(
+        "resume_enqueued",
+        extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id, "rq_job_id": rq_job.id},
+    )
+    return rq_job.id
+
+
 def submit_resume(
     *,
     file: FileStorage | None,
@@ -59,31 +84,12 @@ def submit_resume(
         )
         public_id, resume_id, job_id = db_resume.public_id, db_resume.id, db_job.id
 
-    try:
-        rq_job = get_queue().enqueue(process_resume, resume_id, job_id, retry=DEFAULT_RETRY, job_timeout="10m")
-    except Exception as exc:
-        # The Resume/ProcessingJob rows above are already committed — if we
-        # don't mark them failed here, they're stuck at "pending" forever
-        # with no evaluation and no visible error (e.g. Redis unreachable).
-        logger.error(
-            "enqueue_failed", extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id}, exc_info=True
-        )
-        with new_session() as db:
-            store.fail_resume(db, job_id, error=str(exc), retryable=False)
-        raise SubmissionError("Could not queue your resume for processing. Please try again shortly.") from exc
-
-    with new_session() as db:
-        store.attach_rq_job_id(db, job_id, rq_job.id)
-
-    logger.info(
-        "resume_submitted",
-        extra={"public_id": public_id, "resume_id": resume_id, "job_id": job_id, "rq_job_id": rq_job.id},
-    )
+    rq_job_id = enqueue_processing(resume_id=resume_id, job_id=job_id, public_id=public_id)
 
     return {
         "public_id": public_id,
         "resume_id": resume_id,
         "job_id": job_id,
-        "rq_job_id": rq_job.id,
+        "rq_job_id": rq_job_id,
         "applicant_name": name,
     }

@@ -156,6 +156,14 @@ def save_evaluation(
     evaluation: EvaluationResult | None,
     card_html: str | None,
 ) -> None:
+    # resume_id is unique on Evaluation — a retried evaluation (see
+    # retry_evaluation()) re-runs the whole pipeline for the same resume, so
+    # the previous row must go first or this insert violates that constraint.
+    existing = session.scalar(select(Evaluation).where(Evaluation.resume_id == resume_id))
+    if existing:
+        session.delete(existing)
+        session.flush()
+
     ev = Evaluation(
         resume_id=resume_id,
         backend=backend,
@@ -265,6 +273,25 @@ def delete_application(session: Session, public_id: str) -> None:
         session.delete(resume)
         session.delete(applicant)
         session.commit()
+
+
+def retry_evaluation(session: Session, public_id: str) -> tuple[int, int] | None:
+    """Resets a definitively-failed resume back to "pending" with a fresh
+    ProcessingJob, for a recruiter to re-run evaluation in place (e.g. after
+    fixing an invalid API key) without deleting and resubmitting the
+    candidate. Only applies to resumes actually in the "failed" state —
+    returns None (caller responds 400) for anything else, including
+    not-found, since retrying a pending/processing/evaluated resume makes no
+    sense. Returns (resume_id, new_job_id) for the caller to enqueue."""
+    resume = session.scalar(select(Resume).where(Resume.public_id == public_id))
+    if not resume or resume.status != "failed":
+        return None
+    resume.status = "pending"
+    resume.parse_error = ""
+    job = ProcessingJob(resume_id=resume.id, status="pending", progress=0, progress_message="Queued")
+    session.add(job)
+    session.commit()
+    return resume.id, job.id
 
 
 # --- Recruiter dashboard: overview, candidate list, job management ---------

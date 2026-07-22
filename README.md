@@ -89,6 +89,11 @@ export.
   matching the pipeline's hash-only audit philosophy.
 - **Ranking actions**: shortlist / mark for interview / reject, from either
   the table or the detail page — instantly, via `POST /admin/candidates/<id>/status`.
+- **Retry evaluation**: a candidate whose evaluation definitively failed (an
+  invalid/expired API key, Ollama unreachable at the time, etc.) shows a
+  "Retry evaluation" action on the table row and the detail page —
+  `POST /admin/candidates/<id>/retry` resets it to pending and re-runs the
+  pipeline in place, without deleting and resubmitting the whole application.
 - **Job management** (`/admin/jobs`): create and edit positions (title,
   description, required skills, minimum experience, active/closed status).
   Every **active** position immediately appears in the public apply page's

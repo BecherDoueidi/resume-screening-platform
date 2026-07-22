@@ -10,6 +10,9 @@
       border:1px solid var(--line); border-radius:10px; padding:16px; max-height:420px; overflow-y:auto; }
     table.redactions { width:100%; border-collapse:collapse; font-size:13px; margin-top:8px; }
     table.redactions th, table.redactions td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); }
+    .btn { display:inline-block; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600;
+      cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink); }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
   </style>
 
   <p><a href="{{ url_for('recruiter.dashboard') }}" style="color:var(--muted);text-decoration:none;font-size:13px;">&larr; Back to dashboard</a></p>
@@ -37,6 +40,12 @@
     <div class="kv"><span class="k">Pipeline status</span><span>{{ c.job_status }} ({{ c.job_progress }}%) &mdash; {{ c.job_message }}</span></div>
     {% if c.parse_error %}<div class="kv"><span class="k">Parse error</span><span class="err" style="margin:0;">{{ c.parse_error }}</span></div>{% endif %}
     {% if c.eval_error %}<div class="kv"><span class="k">Eval error</span><span class="err" style="margin:0;">{{ c.eval_error }}</span></div>{% endif %}
+    {% if c.job_status == 'failed' and has_permission(current_user, 'manage_candidates') %}
+      <form action="{{ url_for('recruiter.retry_candidate_evaluation', public_id=c.id) }}" method="post" style="margin-top:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn" style="border-color:var(--accent);color:var(--accent);">Retry evaluation</button>
+      </form>
+    {% endif %}
   </div>
 
   {% if c.overall is not none %}

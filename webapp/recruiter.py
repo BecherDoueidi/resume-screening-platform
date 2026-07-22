@@ -33,6 +33,7 @@ from webapp.auth import (
 )
 from webapp.db import new_session
 from webapp.store import RECRUITER_STATUSES
+from webapp.submissions import SubmissionError, enqueue_processing
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +123,38 @@ def set_candidate_status(public_id):
     if request.is_json:
         return jsonify({"ok": True, "status": new_status})
     return redirect(request.referrer or url_for("recruiter.dashboard"))
+
+
+@recruiter_bp.route("/candidates/<public_id>/retry", methods=["POST"])
+@require_permission(MANAGE_CANDIDATES)
+def retry_candidate_evaluation(public_id):
+    """Re-runs the pipeline for a resume stuck in "failed" (e.g. an invalid
+    API key, or Ollama being unreachable at submission time) — without this,
+    the only way to get a fresh evaluation was deleting and resubmitting the
+    whole application."""
+    with new_session() as db:
+        ids = store.retry_evaluation(db, public_id)
+    if ids is None:
+        message = "Only a failed evaluation can be retried."
+        if request.is_json:
+            return jsonify({"error": message}), 400
+        return redirect(request.referrer or url_for("recruiter.candidate_detail", public_id=public_id))
+
+    resume_id, job_id = ids
+    try:
+        enqueue_processing(resume_id=resume_id, job_id=job_id, public_id=public_id)
+    except SubmissionError as exc:
+        if request.is_json:
+            return jsonify({"error": str(exc)}), 400
+        return redirect(request.referrer or url_for("recruiter.candidate_detail", public_id=public_id))
+
+    with new_session() as db:
+        store.log_action(db, actor=current_user.username, action="retry_evaluation", details={"public_id": public_id})
+    logger.info("retry_candidate_evaluation", extra={"actor": current_user.username, "public_id": public_id})
+
+    if request.is_json:
+        return jsonify({"ok": True})
+    return redirect(request.referrer or url_for("recruiter.candidate_detail", public_id=public_id))
 
 
 @recruiter_bp.route("/delete-all", methods=["POST"])

@@ -53,6 +53,50 @@ def evaluated_candidate(job_id):
     return public_id
 
 
+@pytest.fixture
+def failed_candidate(job_id):
+    """A candidate whose evaluation definitively failed (e.g. a bad API key)
+    — the only state retry_evaluation should act on."""
+    from screener.models import Evaluation as EvaluationResult
+
+    with new_session() as s:
+        resume, job = store.create_submission(
+            s,
+            job_position_id=job_id,
+            applicant_name="Failed Candidate",
+            original_filename="failed.pdf",
+            storage_path="/tmp/failed.pdf",
+        )
+        resume_id, job_id_ = resume.id, job.id
+        public_id = resume.public_id
+    with new_session() as s:
+        store.save_anonymized_text(s, resume_id, "Anonymized resume text.")
+        store.save_evaluation(
+            s,
+            resume_id,
+            job_id_,
+            backend="claude",
+            evaluation=EvaluationResult(
+                skill_match=0,
+                experience_relevance=0,
+                project_impact=0,
+                overall=0,
+                justification="",
+                error="API error 401: invalid x-api-key",
+            ),
+            card_html=None,
+        )
+    return public_id
+
+
+@pytest.fixture(autouse=True)
+def _mock_queue(mocker):
+    fake_job = mocker.Mock(id="fake-rq-job-id")
+    fake_queue = mocker.Mock()
+    fake_queue.enqueue.return_value = fake_job
+    return mocker.patch("webapp.submissions.get_queue", return_value=fake_queue)
+
+
 class TestAuthGating:
     def test_dashboard_redirects_to_login_when_anonymous(self, client):
         resp = client.get("/admin/dashboard")
@@ -144,6 +188,81 @@ class TestCandidateDetail:
     def test_404_for_unknown_candidate(self, admin_client):
         resp = admin_client.get("/admin/candidates/does-not-exist")
         assert resp.status_code == 404
+
+
+class TestRetryEvaluation:
+    def test_admin_can_retry_failed_evaluation(self, admin_client, failed_candidate, db_session, _mock_queue):
+        from webapp.models_db import ProcessingJob, Resume
+
+        resp = admin_client.post(f"/admin/candidates/{failed_candidate}/retry")
+        assert resp.status_code == 302
+
+        resume = db_session.query(Resume).filter_by(public_id=failed_candidate).one()
+        assert resume.status == "pending"
+        assert resume.parse_error == ""
+
+        jobs = db_session.query(ProcessingJob).filter_by(resume_id=resume.id).order_by(ProcessingJob.id).all()
+        assert len(jobs) == 2  # original failed job + the fresh retry job
+        assert jobs[-1].status == "pending"
+
+        fake_queue = _mock_queue.return_value
+        fake_queue.enqueue.assert_called_once()
+
+    def test_retried_evaluation_replaces_the_stale_failed_one(self, failed_candidate, db_session):
+        """save_evaluation must be able to overwrite a resume's previous
+        (failed) Evaluation row — Evaluation.resume_id is unique, so without
+        the upsert-on-save behavior a retry's worker run would crash with an
+        IntegrityError the moment it tried to persist the fresh result."""
+        from screener.models import Evaluation as EvaluationResult
+        from webapp.models_db import Evaluation, ProcessingJob, Resume
+
+        resume = db_session.query(Resume).filter_by(public_id=failed_candidate).one()
+        job = ProcessingJob(resume_id=resume.id, status="pending", progress=0, progress_message="Queued")
+        db_session.add(job)
+        db_session.commit()
+
+        store.save_evaluation(
+            db_session,
+            resume.id,
+            job.id,
+            backend="ollama",
+            evaluation=EvaluationResult(
+                skill_match=90, experience_relevance=85, project_impact=80, overall=85, justification="Great fit."
+            ),
+            card_html="<div>card</div>",
+        )
+
+        evals = db_session.query(Evaluation).filter_by(resume_id=resume.id).all()
+        assert len(evals) == 1
+        assert evals[0].overall == 85
+
+    def test_recruiter_can_retry_failed_evaluation(self, recruiter_client, failed_candidate):
+        resp = recruiter_client.post(f"/admin/candidates/{failed_candidate}/retry")
+        assert resp.status_code == 302
+
+    def test_viewer_cannot_retry(self, viewer_client, failed_candidate):
+        resp = viewer_client.post(f"/admin/candidates/{failed_candidate}/retry")
+        assert resp.status_code == 403
+
+    def test_cannot_retry_an_already_evaluated_candidate(self, admin_client, evaluated_candidate, _mock_queue):
+        resp = admin_client.post(f"/admin/candidates/{evaluated_candidate}/retry")
+        assert resp.status_code == 302
+        _mock_queue.return_value.enqueue.assert_not_called()
+
+    def test_returns_400_json_for_unknown_candidate(self, admin_client):
+        resp = admin_client.post("/admin/candidates/does-not-exist/retry", content_type="application/json", data="{}")
+        assert resp.status_code == 400
+        assert resp.get_json()["error"] == "Only a failed evaluation can be retried."
+
+    def test_enqueue_failure_keeps_resume_failed(self, admin_client, failed_candidate, db_session, mocker):
+        from webapp.models_db import Resume
+
+        mocker.patch("webapp.submissions.get_queue").return_value.enqueue.side_effect = ConnectionError("no redis")
+        resp = admin_client.post(f"/admin/candidates/{failed_candidate}/retry")
+        assert resp.status_code == 302
+
+        resume = db_session.query(Resume).filter_by(public_id=failed_candidate).one()
+        assert resume.status == "failed"
 
 
 class TestDeletion:
