@@ -295,6 +295,16 @@ def deactivate_user(user_id):
     return redirect(url_for("recruiter.users"))
 
 
+@recruiter_bp.route("/users/<int:user_id>/activate", methods=["POST"])
+@require_permission(MANAGE_USERS)
+def activate_user(user_id):
+    with new_session() as db:
+        store.set_user_active(db, user_id, active=True)
+        store.log_action(db, actor=current_user.username, action="activate_user", details={"user_id": user_id})
+    logger.info("user_activated", extra={"actor": current_user.username, "user_id": user_id})
+    return redirect(url_for("recruiter.users"))
+
+
 # --- Export --------------------------------------------------------------
 
 _EXPORT_FIELDS = [

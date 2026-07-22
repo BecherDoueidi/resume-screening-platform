@@ -9,6 +9,7 @@
     table.users td { padding:8px 10px; border-bottom:1px solid var(--line); }
     select.role-select { padding:8px 11px; border:1px solid var(--line); border-radius:8px; font-family:inherit; }
     .btn-danger-text { color:#cc4433; background:none; border:0; cursor:pointer; font-size:12.5px; font-weight:600; padding:0; }
+    .btn-active-text { color:#1e9e5a; background:none; border:0; cursor:pointer; font-size:12.5px; font-weight:600; padding:0; }
   </style>
 
   <p><a href="{{ url_for('recruiter.dashboard') }}" style="color:var(--muted);text-decoration:none;font-size:13px;">&larr; Back to dashboard</a></p>
@@ -57,6 +58,11 @@
                       onsubmit="return confirm('Deactivate {{ u.username }}?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="btn-danger-text">Deactivate</button>
+                </form>
+              {% elif not u.is_active %}
+                <form method="post" action="{{ url_for('recruiter.activate_user', user_id=u.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn-active-text">Activate</button>
                 </form>
               {% endif %}
             </td>

@@ -378,6 +378,33 @@ class TestUserManagement:
 
         assert authenticate(db_session, "recruiter1", "recruitpass123") is None
 
+    def test_activate_user_restores_login(self, admin_client, recruiter_user, db_session):
+        admin_client.post(f"/admin/users/{recruiter_user.id}/deactivate")
+        db_session.expire_all()
+
+        resp = admin_client.post(f"/admin/users/{recruiter_user.id}/activate")
+        assert resp.status_code == 302
+        db_session.expire_all()
+
+        from webapp.auth import authenticate
+
+        assert authenticate(db_session, "recruiter1", "recruitpass123") is not None
+
+    def test_deactivated_user_shows_activate_button(self, admin_client, recruiter_user):
+        admin_client.post(f"/admin/users/{recruiter_user.id}/deactivate")
+        resp = admin_client.get("/admin/users")
+        assert b"Activate" in resp.data
+
+    def test_viewer_cannot_activate_user(self, client, admin_user, viewer_user, recruiter_user):
+        from tests.integration.conftest import _login_as
+
+        _login_as(client, admin_user)
+        client.post(f"/admin/users/{recruiter_user.id}/deactivate")
+
+        _login_as(client, viewer_user)
+        resp = client.post(f"/admin/users/{recruiter_user.id}/activate")
+        assert resp.status_code == 403
+
 
 class TestExport:
     def test_csv_export_contains_candidate(self, admin_client, evaluated_candidate):
