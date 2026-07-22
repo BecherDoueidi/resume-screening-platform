@@ -386,7 +386,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-copy .env.example .env       # then paste your ANTHROPIC_API_KEY into .env
+copy .env.example .env       # works as-is with local Ollama; uncomment ANTHROPIC_API_KEY in .env for Claude instead
 ```
 
 ## Test data
