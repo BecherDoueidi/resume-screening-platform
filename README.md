@@ -5,6 +5,20 @@ An AI pipeline that ingests a job description plus a directory of PDF resumes,
 semantically evaluates candidates with the Claude API, and produces a ranked
 HTML dashboard with per-candidate justifications and tailored interview questions.
 
+## Demo
+
+**A candidate picks an open role and applies — no evaluation detail is ever shown to them:**
+
+![Apply page](docs/screenshots/apply-page.png)
+
+**Recruiters get a full dashboard — search, filter, rank, and export every applicant:**
+
+![Recruiter dashboard](docs/screenshots/recruiter-dashboard.png)
+
+**Every candidate's detail page shows the full AI evaluation and the bias-mitigation audit trail — which fields were redacted and how many times, never the original values:**
+
+![Candidate detail page](docs/screenshots/candidate-detail.png)
+
 ## Run with Docker (recommended)
 
 ```powershell
